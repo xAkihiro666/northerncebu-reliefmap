@@ -169,13 +169,13 @@ header {
 
 .legend {
     position: absolute;
-    top: 20px;
+    top: 130px;
     right: 20px;
     background: rgba(255, 255, 255, 0.9);
     padding: 1rem;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 45000;
+    z-index: 5000;
     max-width: 250px;
 }
 
@@ -370,6 +370,17 @@ header {
         min-height: 20px;
         font-size: 0.8rem;
     }
+    
+    .report-location-btn {
+        right: 15px;
+        bottom: 15px;
+    }
+    
+    .btn-floating {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+    }
 
     .btn {
         padding: 0.6rem 1rem;
@@ -521,8 +532,8 @@ header {
 
 .info-panel {
     position: absolute;
-    bottom: 20px;
-    left: 70px;
+    bottom: 100px;
+    right: 20px;
     width: 350px;
     max-height: 450px;
     overflow-y: auto;
@@ -532,7 +543,7 @@ header {
     padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 50000;
+    z-index: 5000;
     display: block;
     font-size: 0.9rem;
 }
@@ -1287,16 +1298,58 @@ footer {
     }
 }
 
-/* Pinned Locations Dropdown */
+/* Report Location Button - floating on map */
+.report-location-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 5000;
+}
+
+.btn-floating {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: none;
+    transition: all 0.3s ease;
+    background: #28a745;
+    color: white;
+}
+
+.btn-floating:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    background: #218838;
+}
+
+.btn-floating:active {
+    transform: translateY(0);
+}
+
+/* Pinned Locations Dropdown - positioned on map */
 .pinned-locations-dropdown {
-    position: relative;
-    display: inline-block;
-    z-index: 90000;
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 5000;
+}
+
+.pinned-locations-dropdown .btn {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
 }
 
 .pinned-list {
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 0;
     background: white;
     border: 1px solid #ddd;
@@ -1306,8 +1359,8 @@ footer {
     max-width: 400px;
     max-height: 400px;
     overflow-y: auto;
-    z-index: 91000;
-    margin-top: 0.5rem;
+    z-index: 5100;
+    margin-bottom: 0.5rem;
     display: none;
 }
 
