@@ -361,6 +361,16 @@ footer {
 
 /* Enhanced Responsive Design */
 @media (max-width: 768px) {
+    /* Hide zoom controls on tablets and mobile devices */
+    .leaflet-control-zoom,
+    .leaflet-control-zoom-in,
+    .leaflet-control-zoom-out,
+    .leaflet-control-zoom.leaflet-bar.leaflet-control {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+
     .control-panel {
         flex-direction: column;
         padding: 0.75rem;
@@ -399,7 +409,8 @@ footer {
 
     .legend {
         position: absolute;
-        top: 10px;
+        top: auto;
+        bottom: 95px; /* Just above the green report button with safe spacing */
         right: 10px;
         left: auto;
         width: auto;
@@ -521,6 +532,7 @@ footer {
     }
 
     .legend {
+        bottom: 85px; /* Just above the green report button on small screens with safe spacing */
         padding: 0.5rem;
         font-size: 0.7rem;
     }
@@ -556,37 +568,19 @@ footer {
         min-height: 300px;
     }
 
-    .sync-status {
-        font-size: 0.75rem;
-        padding: 0.4rem 0.8rem;
-    }
-
-    .modal-content {
-        width: 98%;
-        margin: 0.5rem;
-        max-height: 90vh;
-    }
-
-    .modal-body {
-        padding: 1rem;
-    }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-        font-size: 16px;
-        /* Prevents zoom on iOS */
-        padding: 0.6rem;
-    }
-
-    .form-actions {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
     .form-actions .btn {
         width: 100%;
         justify-content: center;
+    }
+
+    /* Hide zoom controls on mobile devices - Leaflet zoom control classes */
+    .leaflet-control-zoom,
+    .leaflet-control-zoom-in,
+    .leaflet-control-zoom-out,
+    .leaflet-control-zoom.leaflet-bar.leaflet-control {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
     }
 }
 
