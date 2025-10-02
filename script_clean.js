@@ -373,6 +373,74 @@ function loadFromLocalStorage() {
 // Northern Cebu coordinates (approximate center)
 const NORTHERN_CEBU_CENTER = [10.8, 124.0];
 
+// Northern Cebu precise bounding box (land areas only)
+const NORTHERN_CEBU_BOUNDS = {
+    north: 11.2,   // Northern boundary (Medellin area)
+    south: 10.4,   // Southern boundary (Danao/Carmen area)
+    east: 124.1,   // Eastern boundary (coastal limit)
+    west: 123.7    // Western boundary (mountain areas)
+};
+
+// Known land reference points for validation
+const LAND_REFERENCE_POINTS = [
+    { name: 'Bogo City Center', coords: [11.0508, 124.0061] },
+    { name: 'Medellin Center', coords: [11.1289, 123.9597] },
+    { name: 'San Remigio Center', coords: [11.0833, 123.9167] },
+    { name: 'Tabuelan Center', coords: [10.8167, 123.9167] },
+    { name: 'Tuburan Center', coords: [10.7333, 123.8333] },
+    { name: 'Danao City Center', coords: [10.5167, 124.0167] },
+    { name: 'Carmen Center', coords: [10.5833, 124.0333] },
+    { name: 'Catmon Center', coords: [10.7167, 124.0167] },
+    { name: 'Sogod Center', coords: [10.7500, 124.0000] },
+    { name: 'Borbon Center', coords: [10.8333, 124.0333] }
+];
+
+// Function to calculate distance between two coordinates (in kilometers)
+function calculateDistance(coord1, coord2) {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (coord2[0] - coord1[0]) * Math.PI / 180;
+    const dLon = (coord2[1] - coord1[1]) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(coord1[0] * Math.PI / 180) * Math.cos(coord2[0] * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+// Function to validate if a location is on land (not in the sea)
+function isLocationOnLand(coords) {
+    const [lat, lon] = coords;
+    
+    // First check: Must be within reasonable bounds of Northern Cebu
+    if (lat < NORTHERN_CEBU_BOUNDS.south || lat > NORTHERN_CEBU_BOUNDS.north ||
+        lon < NORTHERN_CEBU_BOUNDS.west || lon > NORTHERN_CEBU_BOUNDS.east) {
+        return false;
+    }
+    
+    // Second check: Must be within reasonable distance of known land points
+    const maxDistanceFromLand = 15; // Maximum 15km from any known land point
+    
+    for (const landPoint of LAND_REFERENCE_POINTS) {
+        const distance = calculateDistance(coords, landPoint.coords);
+        if (distance <= maxDistanceFromLand) {
+            return true;
+        }
+    }
+    
+    // Third check: Exclude obvious sea coordinates
+    // Eastern coast limit - anything too far east is likely in the sea
+    if (lon > 124.05 && lat > 10.9) {
+        return false;
+    }
+    
+    // Western mountain limit - anything too far west is likely in mountains/other provinces
+    if (lon < 123.75) {
+        return false;
+    }
+    
+    return false;
+}
+
 // Initialize the map
 async function initMap() {
     // Create map centered on Northern Cebu
@@ -719,7 +787,7 @@ async function getGeocodingSuggestions(searchTerm) {
         
         for (const query of searches) {
             const encodedQuery = encodeURIComponent(query);
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&countrycodes=ph&limit=8&addressdetails=1&bounded=1&viewbox=123.5,11.5,125.0,9.5&extratags=1`;
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&countrycodes=ph&limit=8&addressdetails=1&bounded=1&viewbox=${NORTHERN_CEBU_BOUNDS.west},${NORTHERN_CEBU_BOUNDS.north},${NORTHERN_CEBU_BOUNDS.east},${NORTHERN_CEBU_BOUNDS.south}&extratags=1&exclude_place_ids=&layer=address,poi,railway,natural,manmade`;
             
             const response = await fetch(url, {
                 headers: {
@@ -730,22 +798,47 @@ async function getGeocodingSuggestions(searchTerm) {
             if (response.ok) {
                 const results = await response.json();
                 
-                // Filter results to prioritize Northern Cebu area
+                // Filter results to prioritize Northern Cebu area and exclude water/sea locations
                 const filteredResults = results.filter(result => {
                     const displayName = result.display_name.toLowerCase();
-                    return displayName.includes('cebu') || 
-                           displayName.includes('bogo') ||
-                           displayName.includes('medellin') ||
-                           displayName.includes('tabuelan') ||
-                           displayName.includes('san remigio') ||
-                           displayName.includes('tuburan') ||
-                           displayName.includes('asturias') ||
-                           displayName.includes('balamban') ||
-                           displayName.includes('danao') ||
-                           displayName.includes('carmen') ||
-                           displayName.includes('catmon') ||
-                           displayName.includes('sogod') ||
-                           displayName.includes('borbon');
+                    const lat = parseFloat(result.lat);
+                    const lon = parseFloat(result.lon);
+                    
+                    // Check if coordinates are within Northern Cebu bounds
+                    const withinBounds = lat >= NORTHERN_CEBU_BOUNDS.south && 
+                                       lat <= NORTHERN_CEBU_BOUNDS.north && 
+                                       lon >= NORTHERN_CEBU_BOUNDS.west && 
+                                       lon <= NORTHERN_CEBU_BOUNDS.east;
+                    
+                    // Exclude water/sea locations
+                    const isWaterLocation = displayName.includes('sea') ||
+                                          displayName.includes('ocean') ||
+                                          displayName.includes('strait') ||
+                                          displayName.includes('channel') ||
+                                          displayName.includes('bay') ||
+                                          displayName.includes('reef') ||
+                                          displayName.includes('island') && !displayName.includes('cebu') ||
+                                          result.class === 'natural' && (result.type === 'water' || result.type === 'coastline');
+                    
+                    // Check if it's a valid land location
+                    const isValidLandLocation = isLocationOnLand([lat, lon]);
+                    
+                    // Must be within bounds, not water, on land, and in Northern Cebu area
+                    return withinBounds && !isWaterLocation && isValidLandLocation && (
+                        displayName.includes('cebu') || 
+                        displayName.includes('bogo') ||
+                        displayName.includes('medellin') ||
+                        displayName.includes('tabuelan') ||
+                        displayName.includes('san remigio') ||
+                        displayName.includes('tuburan') ||
+                        displayName.includes('asturias') ||
+                        displayName.includes('balamban') ||
+                        displayName.includes('danao') ||
+                        displayName.includes('carmen') ||
+                        displayName.includes('catmon') ||
+                        displayName.includes('sogod') ||
+                        displayName.includes('borbon')
+                    );
                 });
                 
                 const mappedResults = filteredResults.map(result => ({
@@ -945,7 +1038,7 @@ async function performGeocodingSearch(searchTerm, originalName) {
         
         for (const query of searchVariations) {
             const encodedQuery = encodeURIComponent(query);
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&countrycodes=ph&limit=3&addressdetails=1&bounded=1&viewbox=123.5,11.5,125.0,9.5`;
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&countrycodes=ph&limit=3&addressdetails=1&bounded=1&viewbox=${NORTHERN_CEBU_BOUNDS.west},${NORTHERN_CEBU_BOUNDS.north},${NORTHERN_CEBU_BOUNDS.east},${NORTHERN_CEBU_BOUNDS.south}&layer=address,poi,railway,natural,manmade`;
             
             const response = await fetch(url, {
                 headers: {
@@ -957,17 +1050,38 @@ async function performGeocodingSearch(searchTerm, originalName) {
                 const results = await response.json();
                 
                 if (results && results.length > 0) {
-                    // Filter results to prioritize Northern Cebu locations
+                    // Filter results to prioritize Northern Cebu locations and exclude water areas
                     const filteredResults = results.filter(result => {
                         const displayName = result.display_name.toLowerCase();
-                        return displayName.includes('cebu') || 
-                               displayName.includes('bogo') ||
-                               displayName.includes('medellin') ||
-                               displayName.includes('tabuelan') ||
-                               displayName.includes('san remigio') ||
-                               displayName.includes('tuburan') ||
-                               displayName.includes('asturias') ||
-                               displayName.includes('balamban');
+                        const lat = parseFloat(result.lat);
+                        const lon = parseFloat(result.lon);
+                        
+                        // Check bounds and land validation
+                        const withinBounds = lat >= NORTHERN_CEBU_BOUNDS.south && 
+                                           lat <= NORTHERN_CEBU_BOUNDS.north && 
+                                           lon >= NORTHERN_CEBU_BOUNDS.west && 
+                                           lon <= NORTHERN_CEBU_BOUNDS.east;
+                        
+                        const isWaterLocation = displayName.includes('sea') ||
+                                              displayName.includes('ocean') ||
+                                              displayName.includes('strait') ||
+                                              displayName.includes('channel') ||
+                                              displayName.includes('bay') ||
+                                              displayName.includes('reef') ||
+                                              result.class === 'natural' && result.type === 'water';
+                        
+                        const isValidLandLocation = isLocationOnLand([lat, lon]);
+                        
+                        return withinBounds && !isWaterLocation && isValidLandLocation && (
+                            displayName.includes('cebu') || 
+                            displayName.includes('bogo') ||
+                            displayName.includes('medellin') ||
+                            displayName.includes('tabuelan') ||
+                            displayName.includes('san remigio') ||
+                            displayName.includes('tuburan') ||
+                            displayName.includes('asturias') ||
+                            displayName.includes('balamban')
+                        );
                     });
                     
                     if (filteredResults.length > 0) {
@@ -1038,18 +1152,51 @@ function searchLocation() {
             resetSearchButton(searchBtn, originalHTML);
             
             if (results && results.length > 0) {
-                // Filter results to prioritize Philippines/Cebu locations
-                const philippinesResults = results.filter(result => 
-                    result.display_name.toLowerCase().includes('philippines') ||
-                    result.display_name.toLowerCase().includes('cebu') ||
-                    result.display_name.toLowerCase().includes('bohol') ||
-                    result.display_name.toLowerCase().includes('leyte')
-                );
+                // Filter results to prioritize Northern Cebu locations and exclude water areas
+                const validResults = results.filter(result => {
+                    const displayName = result.display_name.toLowerCase();
+                    const lat = parseFloat(result.lat);
+                    const lon = parseFloat(result.lon);
+                    
+                    // Check if it's in Northern Cebu area
+                    const isNorthernCebu = displayName.includes('cebu') || 
+                                         displayName.includes('bogo') ||
+                                         displayName.includes('medellin') ||
+                                         displayName.includes('tabuelan') ||
+                                         displayName.includes('san remigio') ||
+                                         displayName.includes('tuburan') ||
+                                         displayName.includes('danao') ||
+                                         displayName.includes('carmen') ||
+                                         displayName.includes('catmon') ||
+                                         displayName.includes('sogod') ||
+                                         displayName.includes('borbon');
+                    
+                    // Check if it's not a water location
+                    const isWaterLocation = displayName.includes('sea') ||
+                                          displayName.includes('ocean') ||
+                                          displayName.includes('strait') ||
+                                          displayName.includes('channel') ||
+                                          displayName.includes('bay') ||
+                                          displayName.includes('reef') ||
+                                          result.class === 'natural' && result.type === 'water';
+                    
+                    // Check if it's on land
+                    const isValidLandLocation = isLocationOnLand([lat, lon]);
+                    
+                    return isNorthernCebu && !isWaterLocation && isValidLandLocation;
+                });
                 
-                const bestResult = philippinesResults.length > 0 ? philippinesResults[0] : results[0];
+                // Use filtered results if available, otherwise fall back to original results
+                const bestResult = validResults.length > 0 ? validResults[0] : 
+                                 (results.filter(r => r.display_name.toLowerCase().includes('philippines'))[0] || results[0]);
                 const coords = [parseFloat(bestResult.lat), parseFloat(bestResult.lon)];
                 
-                showSearchResult(coords, bestResult.display_name, 'Found Location');
+                // Final validation before showing result
+                if (isLocationOnLand(coords)) {
+                    showSearchResult(coords, bestResult.display_name, 'Found Location');
+                } else {
+                    systemAlert(`Location "${searchTerm}" appears to be in water or outside the Northern Cebu area. Please try searching for a nearby barangay or municipality instead.`);
+                }
             } else {
                 systemAlert('Location not found. Please try a different search term or check the spelling.');
             }
@@ -1065,7 +1212,7 @@ function geocodeLocation(query) {
     // Use Nominatim (OpenStreetMap) geocoding service
     // Bias search towards Philippines and specifically Cebu
     const encodedQuery = encodeURIComponent(query);
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&countrycodes=ph&limit=5&addressdetails=1&bounded=1&viewbox=123.5,11.5,125.0,9.5`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&countrycodes=ph&limit=5&addressdetails=1&bounded=1&viewbox=${NORTHERN_CEBU_BOUNDS.west},${NORTHERN_CEBU_BOUNDS.north},${NORTHERN_CEBU_BOUNDS.east},${NORTHERN_CEBU_BOUNDS.south}&layer=address,poi,railway,natural,manmade`;
     
     return fetch(url, {
         headers: {

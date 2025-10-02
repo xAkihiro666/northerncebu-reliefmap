@@ -169,7 +169,7 @@ header {
 
 .legend {
     position: absolute;
-    top: 130px;
+    top: 10px;
     right: 20px;
     background: rgba(255, 255, 255, 0.9);
     padding: 1rem;
@@ -533,7 +533,7 @@ header {
 .info-panel {
     position: absolute;
     bottom: 100px;
-    right: 20px;
+    left: 20px;
     width: 350px;
     max-height: 450px;
     overflow-y: auto;
