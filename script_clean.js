@@ -2082,7 +2082,10 @@ function createUserReportPopup(report) {
             <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
                 <i class="fas fa-info-circle"></i> This location was reported by a community member and needs verification.
             </div>
-            <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
+            <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button onclick="openWazeNavigation(${report.coords[0]}, ${report.coords[1]}, '${report.name.replace(/'/g, "\\'")}');" class="waze-btn popup-waze-btn" title="Navigate to this location with Waze">
+                    <i class="fas fa-route"></i> Navigate with Waze
+                </button>
                 ${actionButton}
             </div>
         </div>

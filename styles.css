@@ -1504,6 +1504,18 @@ footer {
     font-size: 0.8rem;
 }
 
+/* Popup-specific Waze button styling */
+.popup-waze-btn {
+    margin-bottom: 0.5rem;
+    min-width: 160px;
+    justify-content: center;
+}
+
+.popup-content .waze-btn {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+}
+
 /* Sync Status Indicator */
 .sync-status {
     display: flex;
@@ -1599,5 +1611,14 @@ footer {
     
     .pinned-item-actions {
         margin-top: 0.4rem;
+    }
+    
+    .popup-waze-btn {
+        min-width: 140px;
+        font-size: 0.75rem;
+    }
+    
+    .popup-content .waze-btn {
+        padding: 0.4rem 0.8rem;
     }
 }
