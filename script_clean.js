@@ -517,6 +517,29 @@ function setupEventListeners() {
         }
     });
 
+    // Clear search button functionality
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    
+    // Show/hide clear button based on input content
+    function toggleClearButton() {
+        const hasContent = searchInput.value.trim().length > 0;
+        clearSearchBtn.style.display = hasContent ? 'flex' : 'none';
+    }
+    
+    // Clear search input when clear button is clicked
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchInput.focus();
+        hideSuggestions();
+        toggleClearButton();
+    });
+    
+    // Update clear button visibility on input
+    searchInput.addEventListener('input', toggleClearButton);
+    
+    // Initial state - hide clear button if empty
+    toggleClearButton();
+
     // Info panel close button
     document.getElementById('closeInfo').addEventListener('click', () => {
         document.getElementById('infoPanel').style.display = 'none';

@@ -92,8 +92,48 @@ header {
     z-index: 2000;
 }
 
+/* Clear search button */
+.clear-search-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none !important;
+    border: none !important;
+    color: #495057 !important;
+    cursor: pointer;
+    padding: 4px;
+    width: 20px;
+    height: 20px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    transition: transform 0.2s ease;
+    z-index: 2001;
+    box-shadow: none !important;
+}
+
+.clear-search-btn:hover {
+    transform: translateY(-50%) scale(1.2);
+    background: none !important;
+}
+
+.clear-search-btn:active {
+    transform: translateY(-50%) scale(1.1);
+    background: none !important;
+}
+
+.clear-search-btn:focus {
+    outline: none;
+    background: none !important;
+}
+
 .search-box input {
     padding: 0.5rem;
+    padding-right: 28px;
+    /* Make room for smaller clear button */
     border: 2px solid #ddd;
     border-radius: 5px;
     font-size: 1rem;
@@ -1608,16 +1648,16 @@ footer {
         padding: 0.4rem 0.6rem;
         font-size: 0.75rem;
     }
-    
+
     .pinned-item-actions {
         margin-top: 0.4rem;
     }
-    
+
     .popup-waze-btn {
         min-width: 140px;
         font-size: 0.75rem;
     }
-    
+
     .popup-content .waze-btn {
         padding: 0.4rem 0.8rem;
     }
