@@ -65,7 +65,7 @@ header {
     gap: 1rem;
     flex-wrap: wrap;
     position: relative;
-    z-index: 99997;
+    z-index: 40000;
 }
 
 .controls {
@@ -87,7 +87,7 @@ header {
     position: relative;
     flex: 1;
     min-width: 200px;
-    z-index: 99998;
+    z-index: 41000;
 }
 
 .search-box input {
@@ -1088,7 +1088,7 @@ footer {
     border-top: none;
     border-radius: 0 0 5px 5px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 99999;
+    z-index: 42000;
     max-height: 200px;
     overflow-y: auto;
 }
