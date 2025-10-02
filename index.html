@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Northern Cebu Earthquake Relief Map Guide</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-map"></i> Northern Cebu Earthquake Relief Map Guide</h1>
+            <p>🌐 <strong>Public Community Map</strong> - Anyone can view and report relief locations | Real-time sync across all devices</p>
+            <p>Helping relief efforts reach affected communities - Magnitude 6.7/6.9 Earthquake Response</p>
+        </div>
+    </header>
+
+    <nav class="control-panel">
+        <div class="controls">
+            <button id="reportLocation" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> Report Location Needing Help
+            </button>
+            <div class="pinned-locations-dropdown">
+                <button id="viewPinnedBtn" class="btn btn-info">
+                    <i class="fas fa-list"></i> View Pinned Locations (<span id="pinnedCount">0</span>)
+                </button>
+                <div id="pinnedLocationsList" class="pinned-list" style="display: none;">
+                    <div class="pinned-list-header">
+                        <h4><i class="fas fa-map-pin"></i> Pinned Locations</h4>
+                        <button id="closePinnedList" class="close-btn">&times;</button>
+                    </div>
+                    <div class="pinned-list-content" id="pinnedListContent">
+                        <p class="no-pins">No locations pinned yet. Click "Report Location" to add one.</p>
+                    </div>
+                </div>
+            </div>
+            <div id="syncStatus" class="sync-status">
+                <i class="fas fa-circle" id="syncIcon"></i>
+                <span id="syncText">Connecting...</span>
+            </div>
+            <div id="authIndicator" class="auth-indicator">
+                <i class="fas fa-user-times"></i> Anonymous
+            </div>
+            <a href="admin.html" class="btn btn-secondary btn-sm admin-link">
+                <i class="fas fa-shield-alt"></i> Admin Panel
+            </a>
+        </div>
+        <div class="search-box">
+            <div class="search-input-container">
+                <input type="text" id="searchLocation" placeholder="Search barangay or town..." autocomplete="off">
+                <div id="searchSuggestions" class="search-suggestions" style="display: none;"></div>
+            </div>
+            <button id="searchBtn"><i class="fas fa-search"></i></button>
+        </div>
+    </nav>
+
+    <main>
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="legend" id="mapLegend">
+                <div class="legend-header">
+                    <h3>Map Legend</h3>
+                    <button id="toggleLegend" class="legend-toggle-btn" title="Hide legend">
+                        <i class="fas fa-eye-slash"></i>
+                    </button>
+                </div>
+                <div class="legend-content" id="legendContent">
+                    <div class="legend-section">
+                        <h4>Relief Locations</h4>
+                        <div class="legend-item">
+                            <i class="fas fa-map-marker-alt legend-icon user-reported"></i>
+                            <span>Reported Locations</span>
+                        </div>
+                    </div>
+                    <div class="legend-section">
+                        <h4>Urgency Levels</h4>
+                        <div class="legend-item">
+                            <div class="legend-urgency-marker critical"></div>
+                            <span>Critical - Immediate help needed</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-urgency-marker urgent"></div>
+                            <span>Urgent - Help needed within 24 hours</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-urgency-marker moderate"></div>
+                            <span>Moderate - Help needed within few days</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-panel" id="infoPanel">
+            <div class="info-content">
+                <h3>🌐 Public Relief Community Map</h3>
+                <p><strong>This is a public server</strong> - anyone can view and add relief locations in real-time. Help identify locations that need assistance!</p>
+                
+                <div style="background: #d4edda; padding: 10px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;">
+                    <strong><i class="fas fa-globe"></i> Public Access:</strong><br>
+                    • No login required - anyone can participate<br>
+                    • Changes sync instantly across all devices<br>
+                    • Share this URL with relief workers and community
+                </div>
+
+                <h4>How to Use:</h4>
+                <ul>
+                    <li><strong>Click "Report Location"</strong> to mark places needing help</li>
+                    <li><strong>Click anywhere on the map</strong> to pin a location</li>
+                    <li><strong>Fill out the form</strong> with details about what help is needed</li>
+                    <li><strong>Click on markers</strong> to see reported information</li>
+                    <li><strong>Search locations</strong> using the search box above</li>
+                    <li><strong>Share this URL</strong> with others to expand coverage</li>
+                </ul>
+                
+                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #ffc107;">
+                    <strong><i class="fas fa-info-circle"></i> Community Guidelines:</strong><br>
+                    Please provide accurate information to help relief efforts reach those in need. This map relies on community collaboration.
+                </div>
+                <div class="emergency-contacts">
+                    <h4>Emergency Contacts</h4>
+                    <p><i class="fas fa-phone"></i> NDRRMC: 911</p>
+                    <p><i class="fas fa-phone"></i> Cebu Provincial Disaster: (032) 266-5841</p>
+                    <p><i class="fas fa-phone"></i> Red Cross Cebu: (032) 418-2550</p>
+                </div>
+            </div>
+            <button id="closeInfo" class="close-btn">&times;</button>
+        </div>
+
+        <div class="directions-panel" id="directionsPanel">
+            <div class="directions-header">
+                <h3><i class="fas fa-route"></i> Turn-by-Turn Directions</h3>
+                <button id="closeDirections" class="close-btn">&times;</button>
+            </div>
+            <div class="directions-content" id="directionsContent">
+                <p class="no-route">No route planned. Click "Plan Route" to get started.</p>
+            </div>
+            <div class="route-summary" id="routeSummary" style="display: none;">
+                <div class="summary-item">
+                    <i class="fas fa-road"></i>
+                    <span id="routeDistance">--</span>
+                </div>
+                <div class="summary-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="routeTime">--</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- User Reporting Modal -->
+    <div id="reportModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle"></i> Report Location Needing Help</h3>
+                <button id="closeReportModal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="reportForm">
+                    <div class="form-group">
+                        <label for="locationName">Location Name *</label>
+                        <input type="text" id="locationName" placeholder="e.g., Barangay San Jose, Bogo City" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationSource">Source *</label>
+                        <select id="locationSource" required>
+                            <option value="">Select source...</option>
+                            <option value="facebook">Facebook Post</option>
+                            <option value="twitter">Twitter/X</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="messenger">Messenger/WhatsApp</option>
+                            <option value="news">News Report</option>
+                            <option value="personal">Personal Contact</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reliefNeeds">What help is needed? *</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" value="relief goods"> Relief Goods (Food, Clothing)</label>
+                            <label><input type="checkbox" value="clean water"> Clean Water</label>
+                            <label><input type="checkbox" value="drinking water"> Drinking Water</label>
+                            <label><input type="checkbox" value="volunteers"> Volunteers</label>
+                            <label><input type="checkbox" value="temporary shelter"> Temporary Shelter</label>
+                            <label><input type="checkbox" value="medical aid"> Medical Aid</label>
+                            <label><input type="checkbox" value="transportation"> Transportation</label>
+                            <label><input type="checkbox" value="other"> Other</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="urgencyLevel">Urgency Level *</label>
+                        <select id="urgencyLevel" required>
+                            <option value="">Select urgency...</option>
+                            <option value="critical">Critical - Immediate help needed</option>
+                            <option value="urgent">Urgent - Help needed within 24 hours</option>
+                            <option value="moderate">Moderate - Help needed within few days</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="additionalInfo">Additional Information</label>
+                        <textarea id="additionalInfo"
+                            placeholder="Any additional details about the situation, number of people affected, specific needs, etc."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reporterName">Your Name (Optional)</label>
+                        <input type="text" id="reporterName" placeholder="Your name for follow-up if needed">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reporterContact">Your Contact (Optional)</label>
+                        <input type="text" id="reporterContact" placeholder="Phone or email for verification">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="cancelReport" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-success">Submit Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+        import { firebaseConfig } from './firebase-config.js';
+        
+        // Initialize Firebase
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+            
+            // Make Firebase available globally
+            window.firebaseApp = app;
+            window.firestoreDb = db;
+            window.firebaseAuth = auth;
+            
+            console.log('Firebase SDK loaded successfully');
+        } catch (error) {
+            console.warn('Firebase initialization failed:', error);
+            console.warn('App will fall back to localStorage');
+        }
+    </script>
+    
+    <script src="script_clean.js"></script>
+</body>
+
+</html>
