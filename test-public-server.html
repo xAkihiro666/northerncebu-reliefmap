@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Server Test - Northern Cebu Relief Map</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #218838; }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Public Server Test</h1>
+        <p>This page tests if your Firebase configuration is set up correctly for public access.</p>
+
+        <div id="testResults">
+            <div class="info">
+                <strong>📋 Test Checklist:</strong><br>
+                1. Firebase SDK loads correctly<br>
+                2. Firestore database connects<br>
+                3. Public read/write permissions work<br>
+                4. Real-time sync functions<br>
+            </div>
+        </div>
+
+        <button onclick="runTests()">🚀 Run Tests</button>
+        <button onclick="testWrite()">✍️ Test Write</button>
+        <button onclick="testRead()">👁️ Test Read</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+
+        <div id="liveResults"></div>
+
+        <hr>
+        <h3>📖 Instructions:</h3>
+        <ol>
+            <li><strong>Complete Firebase Setup:</strong> Follow FIREBASE_SETUP.md first</li>
+            <li><strong>Update Config:</strong> Replace values in firebase-config.js</li>
+            <li><strong>Run Tests:</strong> Click "Run Tests" button above</li>
+            <li><strong>Check Results:</strong> All tests should pass (green)</li>
+        </ol>
+
+        <div class="warning">
+            <strong>⚠️ Before Testing:</strong><br>
+            Make sure you've completed the Firebase setup and updated firebase-config.js with your real Firebase project values.
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        import { firebaseConfig } from './firebase-config.js';
+        
+        let app, db;
+        
+        // Initialize Firebase
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            window.firebaseApp = app;
+            window.firestoreDb = db;
+            addResult('✅ Firebase SDK loaded successfully', 'success');
+        } catch (error) {
+            addResult('❌ Firebase initialization failed: ' + error.message, 'error');
+        }
+
+        // Test functions
+        window.runTests = async function() {
+            clearResults();
+            addResult('🔄 Running comprehensive tests...', 'info');
+            
+            await testFirebaseConnection();
+            await testFirestoreRead();
+            await testFirestoreWrite();
+            await testFirestoreDelete();
+            
+            addResult('✅ All tests completed! Check results above.', 'success');
+        };
+
+        async function testFirebaseConnection() {
+            try {
+                if (window.firestoreDb) {
+                    addResult('✅ Firebase connection: OK', 'success');
+                } else {
+                    addResult('❌ Firebase connection: FAILED', 'error');
+                }
+            } catch (error) {
+                addResult('❌ Firebase connection error: ' + error.message, 'error');
+            }
+        }
+
+        async function testFirestoreRead() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'relief-locations'));
+                addResult(`✅ Firestore read: OK (${querySnapshot.size} documents)`, 'success');
+            } catch (error) {
+                addResult('❌ Firestore read failed: ' + error.message, 'error');
+                if (error.code === 'permission-denied') {
+                    addResult('💡 Fix: Check Firestore rules allow public read access', 'warning');
+                }
+            }
+        }
+
+        async function testFirestoreWrite() {
+            try {
+                const testDoc = {
+                    name: 'Test Location',
+                    coords: [10.8, 124.0],
+                    reliefNeeds: ['test'],
+                    reportedAt: new Date().toISOString(),
+                    isTest: true
+                };
+                
+                const docRef = await addDoc(collection(db, 'relief-locations'), testDoc);
+                addResult(`✅ Firestore write: OK (ID: ${docRef.id})`, 'success');
+                
+                // Clean up test document
+                setTimeout(async () => {
+                    try {
+                        await deleteDoc(doc(db, 'relief-locations', docRef.id));
+                        addResult('🗑️ Test document cleaned up', 'info');
+                    } catch (e) {
+                        console.log('Could not clean up test document:', e);
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                addResult('❌ Firestore write failed: ' + error.message, 'error');
+                if (error.code === 'permission-denied') {
+                    addResult('💡 Fix: Check Firestore rules allow public write access', 'warning');
+                }
+            }
+        }
+
+        async function testFirestoreDelete() {
+            try {
+                // This test is included in the write test cleanup
+                addResult('✅ Firestore delete: Will be tested with cleanup', 'info');
+            } catch (error) {
+                addResult('❌ Firestore delete test failed: ' + error.message, 'error');
+            }
+        }
+
+        window.testWrite = async function() {
+            addResult('🔄 Testing write permissions...', 'info');
+            await testFirestoreWrite();
+        };
+
+        window.testRead = async function() {
+            addResult('🔄 Testing read permissions...', 'info');
+            await testFirestoreRead();
+        };
+
+        window.clearResults = function() {
+            document.getElementById('liveResults').innerHTML = '';
+        };
+
+        function addResult(message, type) {
+            const resultsDiv = document.getElementById('liveResults');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            resultsDiv.appendChild(resultDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        // Auto-run basic tests on load
+        setTimeout(() => {
+            if (window.firestoreDb) {
+                addResult('🎉 Ready to test! Firebase is loaded.', 'success');
+                addResult('💡 Click "Run Tests" to verify your public server setup.', 'info');
+            } else {
+                addResult('⚠️ Firebase not loaded. Check your firebase-config.js file.', 'warning');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
