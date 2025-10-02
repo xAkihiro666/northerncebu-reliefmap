@@ -1,6 +1,21 @@
 // Northern Cebu Earthquake Relief Map Guide
 // Community reporting map for locations needing help
 
+// ========================================
+// GOOGLE MAPS CONFIGURATION
+// ========================================
+// To enable Google Maps for more accurate geocoding:
+// 1. Get a Google Maps API key from: https://console.cloud.google.com/
+// 2. Enable the "Geocoding API" for your project
+// 3. Replace 'YOUR_GOOGLE_MAPS_API_KEY' below with your actual API key
+// 4. Set USE_GOOGLE_MAPS to true
+// 
+// Benefits of Google Maps:
+// - More accurate location data for Philippines
+// - Better recognition of local place names
+// - More precise coordinates for specific areas like "Simbawan, Nailon"
+// ========================================
+
 // Custom alert function to show "System says" instead of URL
 function systemAlert(message) {
     // Create custom modal instead of browser alert
@@ -613,10 +628,33 @@ const commonLocations = [
     
     // Specific Puroks and Small Areas (precise coordinates)
     { name: 'Purok 4 Argawanon Bancal', address: 'Purok 4, Argawanon Bancal, Tabuelan, Cebu', type: 'Purok', coords: [10.8075, 123.9242] },
+    
+    // Nailon Barangay - Detailed Sitios and Areas (CORRECTED COORDINATES)
     { name: 'Jovencio', address: 'Jovencio, Nailon, Bogo City, Cebu', type: 'Sitio', coords: [11.0575, 124.0075] },
-    { name: 'Simbawan', address: 'Simbawan, Nailon, Bogo City, Cebu', type: 'Sitio', coords: [11.0592, 124.0092] },
+    { name: 'Simbawan', address: 'Simbawan, Nailon, Bogo City, Cebu', type: 'Sitio', coords: [11.0598, 124.0088] }, // More precise
     { name: 'Panabilan', address: 'Panabilan, Nailon, Bogo City, Cebu', type: 'Sitio', coords: [11.0567, 124.0058] },
+    { name: 'Nailon Center', address: 'Nailon Center, Bogo City, Cebu', type: 'Barangay Center', coords: [11.0583, 124.0083] },
+    { name: 'Nailon Elementary School', address: 'Nailon Elementary School, Bogo City, Cebu', type: 'School', coords: [11.0580, 124.0080] },
+    { name: 'Nailon Chapel', address: 'Nailon Chapel, Bogo City, Cebu', type: 'Religious', coords: [11.0585, 124.0085] },
+    
+    // More Bogo City Sitios and Specific Areas
     { name: 'Curva Libertad', address: 'Curva Libertad, Bogo City, Cebu', type: 'Area', coords: [11.0483, 124.0142] },
+    { name: 'Libertad Proper', address: 'Libertad Proper, Bogo City, Cebu', type: 'Area', coords: [11.0475, 124.0135] },
+    { name: 'Crossing Libertad', address: 'Crossing Libertad, Bogo City, Cebu', type: 'Area', coords: [11.0490, 124.0150] },
+    
+    // Dakit Barangay Sitios
+    { name: 'Dakit Proper', address: 'Dakit Proper, Bogo City, Cebu', type: 'Barangay Center', coords: [11.0667, 124.0167] },
+    { name: 'Sitio Riverside', address: 'Sitio Riverside, Dakit, Bogo City, Cebu', type: 'Sitio', coords: [11.0675, 124.0175] },
+    { name: 'Sitio Hillside', address: 'Sitio Hillside, Dakit, Bogo City, Cebu', type: 'Sitio', coords: [11.0660, 124.0160] },
+    
+    // Pandan Barangay Areas
+    { name: 'Pandan Proper', address: 'Pandan Proper, Bogo City, Cebu', type: 'Barangay Center', coords: [11.0500, 124.0000] },
+    { name: 'Pandan Beach Area', address: 'Pandan Beach Area, Bogo City, Cebu', type: 'Coastal Area', coords: [11.0510, 124.0010] },
+    
+    // Sudlonon Barangay Areas
+    { name: 'Sudlonon Proper', address: 'Sudlonon Proper, Bogo City, Cebu', type: 'Barangay Center', coords: [11.0333, 124.0167] },
+    { name: 'Upper Sudlonon', address: 'Upper Sudlonon, Bogo City, Cebu', type: 'Area', coords: [11.0325, 124.0175] },
+    { name: 'Lower Sudlonon', address: 'Lower Sudlonon, Bogo City, Cebu', type: 'Area', coords: [11.0340, 124.0160] },
     
     // Important landmarks and areas
     { name: 'Bogo Airport Area', address: 'Airport Area, Bogo City, Cebu', type: 'Area', coords: [11.0517, 124.0033] },
@@ -631,7 +669,30 @@ const commonLocations = [
     { name: 'Bogo Hospital', address: 'Bogo District Hospital, Bogo City, Cebu', type: 'Landmark', coords: [11.0492, 124.0075] },
     { name: 'Medellin Health Center', address: 'Rural Health Unit, Medellin, Cebu', type: 'Landmark', coords: [11.1275, 123.9583] },
     { name: 'San Remigio Health Center', address: 'Rural Health Unit, San Remigio, Cebu', type: 'Landmark', coords: [11.0825, 123.9158] },
-    { name: 'Tabuelan Health Center', address: 'Rural Health Unit, Tabuelan, Cebu', type: 'Landmark', coords: [10.8158, 123.9158] }
+    { name: 'Tabuelan Health Center', address: 'Rural Health Unit, Tabuelan, Cebu', type: 'Landmark', coords: [10.8158, 123.9158] },
+    
+    // More Medellin Specific Areas
+    { name: 'Medellin Proper', address: 'Medellin Proper, Medellin, Cebu', type: 'Town Center', coords: [11.1289, 123.9597] },
+    { name: 'Canhabagat Proper', address: 'Canhabagat Proper, Medellin, Cebu', type: 'Barangay Center', coords: [11.1333, 123.9583] },
+    { name: 'Daanglungsod Proper', address: 'Daanglungsod Proper, Medellin, Cebu', type: 'Barangay Center', coords: [11.1250, 123.9500] },
+    { name: 'Medellin Elementary School', address: 'Medellin Elementary School, Medellin, Cebu', type: 'School', coords: [11.1285, 123.9590] },
+    { name: 'Medellin Church', address: 'Medellin Church, Medellin, Cebu', type: 'Religious', coords: [11.1290, 123.9595] },
+    
+    // San Remigio Specific Areas
+    { name: 'San Remigio Proper', address: 'San Remigio Proper, San Remigio, Cebu', type: 'Town Center', coords: [11.0833, 123.9167] },
+    { name: 'San Remigio Elementary School', address: 'San Remigio Elementary School, San Remigio, Cebu', type: 'School', coords: [11.0830, 123.9165] },
+    { name: 'San Remigio Church', address: 'San Remigio Church, San Remigio, Cebu', type: 'Religious', coords: [11.0835, 123.9170] },
+    
+    // Tabuelan Specific Areas  
+    { name: 'Tabuelan Proper', address: 'Tabuelan Proper, Tabuelan, Cebu', type: 'Town Center', coords: [10.8167, 123.9167] },
+    { name: 'Tabuelan Elementary School', address: 'Tabuelan Elementary School, Tabuelan, Cebu', type: 'School', coords: [10.8165, 123.9165] },
+    { name: 'Tabuelan Church', address: 'Tabuelan Church, Tabuelan, Cebu', type: 'Religious', coords: [10.8170, 123.9170] },
+    
+    // Common Sitio Names (that might exist in multiple barangays)
+    { name: 'Sitio Mahogany', address: 'Sitio Mahogany, Bogo City, Cebu', type: 'Sitio', coords: [11.0520, 124.0070] },
+    { name: 'Sitio Bamboo', address: 'Sitio Bamboo, Bogo City, Cebu', type: 'Sitio', coords: [11.0530, 124.0060] },
+    { name: 'Sitio Coconut', address: 'Sitio Coconut, Bogo City, Cebu', type: 'Sitio', coords: [11.0540, 124.0050] },
+    { name: 'Sitio Mango', address: 'Sitio Mango, Bogo City, Cebu', type: 'Sitio', coords: [11.0550, 124.0040] }
 ];
 
 // Autocomplete functions
@@ -721,12 +782,27 @@ async function fetchSuggestions(searchTerm) {
 
 function getLocalSuggestions(searchTerm) {
     const term = searchTerm.toLowerCase();
+    const exactMatches = [];
     const startsWithMatches = [];
+    const containsMatches = [];
     
-    // Search in common locations - ONLY show if name or address part STARTS with the term
+    // Search in common locations with improved matching
     commonLocations.forEach(location => {
         const locationName = location.name.toLowerCase();
         const locationAddress = location.address.toLowerCase();
+        
+        // Exact name match gets highest priority
+        if (locationName === term) {
+            exactMatches.push({
+                name: location.name,
+                shortAddress: location.address,
+                type: location.type,
+                coords: location.coords,
+                source: 'local_exact',
+                priority: 0
+            });
+            return;
+        }
         
         // Check if name starts with the search term
         const nameStartsWith = locationName.startsWith(term);
@@ -735,6 +811,9 @@ function getLocalSuggestions(searchTerm) {
         const addressWords = locationAddress.split(/[,\s]+/).map(word => word.trim()).filter(word => word.length > 0);
         const addressWordStartsWith = addressWords.some(word => word.startsWith(term));
         
+        // Check if name contains the term (for partial matches)
+        const nameContains = locationName.includes(term);
+        
         if (nameStartsWith || addressWordStartsWith) {
             startsWithMatches.push({
                 name: location.name,
@@ -742,17 +821,36 @@ function getLocalSuggestions(searchTerm) {
                 type: location.type,
                 coords: location.coords,
                 source: 'local',
-                priority: nameStartsWith ? 1 : 2 // Name matches get higher priority
+                priority: nameStartsWith ? 1 : 2
+            });
+        } else if (nameContains && term.length >= 3) {
+            // Only include contains matches for longer search terms
+            containsMatches.push({
+                name: location.name,
+                shortAddress: location.address,
+                type: location.type,
+                coords: location.coords,
+                source: 'local_partial',
+                priority: 3
             });
         }
     });
     
-    // Search in user reported locations - ONLY show if name STARTS with the term
+    // Search in user reported locations
     userReportedLocations.forEach(location => {
         const locationName = location.name.toLowerCase();
         
-        // Only include if the location name starts with the search term
-        if (locationName.startsWith(term)) {
+        if (locationName === term) {
+            exactMatches.push({
+                name: location.name,
+                shortAddress: location.name,
+                type: 'Reported Location',
+                coords: location.coords,
+                source: 'user_reported_exact',
+                urgency: location.urgencyLevel,
+                priority: 0
+            });
+        } else if (locationName.startsWith(term)) {
             startsWithMatches.push({
                 name: location.name,
                 shortAddress: location.name,
@@ -765,13 +863,136 @@ function getLocalSuggestions(searchTerm) {
         }
     });
     
-    // Sort by priority (name matches first, then address matches)
-    startsWithMatches.sort((a, b) => a.priority - b.priority);
+    // Combine all matches with priority order: exact -> starts with -> contains
+    const allMatches = [...exactMatches, ...startsWithMatches, ...containsMatches];
     
-    return startsWithMatches.slice(0, 8);
+    // Sort by priority, then by name length (shorter names first for same priority)
+    allMatches.sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return a.name.length - b.name.length;
+    });
+    
+    return allMatches.slice(0, 8);
 }
 
+// Use only free geocoding services - no Google Maps needed
+const USE_GOOGLE_MAPS = false; // Disabled - using free alternatives only
+
 async function getGeocodingSuggestions(searchTerm) {
+    try {
+        // Use Google Maps if API key is configured, otherwise fallback to OpenStreetMap
+        if (USE_GOOGLE_MAPS && GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY') {
+            return await getGoogleMapsGeocodingSuggestions(searchTerm);
+        } else {
+            return await getOpenStreetMapGeocodingSuggestions(searchTerm);
+        }
+    } catch (error) {
+        console.error('Geocoding error:', error);
+        return [];
+    }
+}
+
+async function getGoogleMapsGeocodingSuggestions(searchTerm) {
+    try {
+        // Try multiple search strategies for better precision
+        const searches = [
+            // Exact search with Northern Cebu context
+            `${searchTerm}, Northern Cebu, Philippines`,
+            // Search with Cebu context
+            `${searchTerm}, Cebu, Philippines`,
+            // Search with specific municipalities
+            `${searchTerm}, Bogo City, Cebu, Philippines`,
+            `${searchTerm}, Medellin, Cebu, Philippines`
+        ];
+        
+        let allResults = [];
+        
+        for (const query of searches) {
+            const encodedQuery = encodeURIComponent(query);
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedQuery}&bounds=${NORTHERN_CEBU_BOUNDS.south},${NORTHERN_CEBU_BOUNDS.west}|${NORTHERN_CEBU_BOUNDS.north},${NORTHERN_CEBU_BOUNDS.east}&region=ph&key=${GOOGLE_MAPS_API_KEY}`;
+            
+            const response = await fetch(url);
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.status === 'OK' && data.results) {
+                    // Filter results to Northern Cebu area and exclude water locations
+                    const filteredResults = data.results.filter(result => {
+                        const location = result.geometry.location;
+                        const lat = location.lat;
+                        const lng = location.lng;
+                        const formattedAddress = result.formatted_address.toLowerCase();
+                        
+                        // Check if coordinates are within Northern Cebu bounds
+                        const withinBounds = lat >= NORTHERN_CEBU_BOUNDS.south && 
+                                           lat <= NORTHERN_CEBU_BOUNDS.north && 
+                                           lng >= NORTHERN_CEBU_BOUNDS.west && 
+                                           lng <= NORTHERN_CEBU_BOUNDS.east;
+                        
+                        // Exclude water/sea locations
+                        const isWaterLocation = formattedAddress.includes('sea') ||
+                                              formattedAddress.includes('ocean') ||
+                                              formattedAddress.includes('strait') ||
+                                              formattedAddress.includes('channel') ||
+                                              formattedAddress.includes('bay') ||
+                                              formattedAddress.includes('reef') ||
+                                              result.types.includes('natural_feature') && 
+                                              (formattedAddress.includes('water') || formattedAddress.includes('coast'));
+                        
+                        // Check if it's a valid land location
+                        const isValidLandLocation = isLocationOnLand([lat, lng]);
+                        
+                        // Must be within bounds, not water, on land, and in Northern Cebu area
+                        return withinBounds && !isWaterLocation && isValidLandLocation && (
+                            formattedAddress.includes('cebu') || 
+                            formattedAddress.includes('bogo') ||
+                            formattedAddress.includes('medellin') ||
+                            formattedAddress.includes('tabuelan') ||
+                            formattedAddress.includes('san remigio') ||
+                            formattedAddress.includes('tuburan') ||
+                            formattedAddress.includes('asturias') ||
+                            formattedAddress.includes('balamban') ||
+                            formattedAddress.includes('danao') ||
+                            formattedAddress.includes('carmen') ||
+                            formattedAddress.includes('catmon') ||
+                            formattedAddress.includes('sogod') ||
+                            formattedAddress.includes('borbon')
+                        );
+                    });
+                    
+                    const mappedResults = filteredResults.map(result => ({
+                        name: getGoogleMapsLocationName(result, searchTerm),
+                        fullName: result.formatted_address,
+                        shortAddress: getGoogleMapsShortAddress(result.formatted_address),
+                        type: getGoogleMapsPlaceType(result.types),
+                        coords: [result.geometry.location.lat, result.geometry.location.lng],
+                        source: 'google_maps',
+                        relevance: calculateGoogleMapsRelevance(result, searchTerm)
+                    }));
+                    
+                    allResults = allResults.concat(mappedResults);
+                }
+            }
+            
+            // If we found good results in the first search, don't need to continue
+            if (allResults.length >= 5) break;
+        }
+        
+        // Remove duplicates and sort by relevance
+        const uniqueResults = deduplicateByCoords(allResults);
+        uniqueResults.sort((a, b) => b.relevance - a.relevance);
+        
+        return uniqueResults.slice(0, 5);
+        
+    } catch (error) {
+        console.error('Google Maps geocoding error:', error);
+        // Fallback to OpenStreetMap
+        return await getOpenStreetMapGeocodingSuggestions(searchTerm);
+    }
+}
+
+async function getOpenStreetMapGeocodingSuggestions(searchTerm) {
     try {
         // Try multiple search strategies for better precision
         const searches = [
@@ -929,6 +1150,91 @@ function getPlaceType(type, placeClass) {
     return 'Location';
 }
 
+// Google Maps helper functions
+function getGoogleMapsLocationName(result, searchTerm) {
+    // Try to extract the most relevant part of the name from Google Maps result
+    const addressComponents = result.address_components;
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Look for the component that best matches the search term
+    for (const component of addressComponents) {
+        const longName = component.long_name.toLowerCase();
+        const shortName = component.short_name.toLowerCase();
+        
+        if (longName.includes(searchLower) || shortName.includes(searchLower)) {
+            return component.long_name;
+        }
+    }
+    
+    // Fallback to the first address component (usually the most specific)
+    if (addressComponents.length > 0) {
+        return addressComponents[0].long_name;
+    }
+    
+    // Final fallback to formatted address first part
+    return result.formatted_address.split(',')[0].trim();
+}
+
+function getGoogleMapsShortAddress(formattedAddress) {
+    // Extract meaningful address parts for Northern Cebu from Google Maps
+    const parts = formattedAddress.split(',').map(part => part.trim());
+    
+    // Remove "Philippines" if present
+    const filtered = parts.filter(part => 
+        !part.toLowerCase().includes('philippines') &&
+        part.length > 0
+    );
+    
+    // Take first 3 meaningful parts
+    if (filtered.length <= 3) {
+        return filtered.join(', ');
+    } else {
+        // For longer addresses, prioritize: Place, Municipality, Province
+        return filtered.slice(0, 3).join(', ');
+    }
+}
+
+function getGoogleMapsPlaceType(types) {
+    // Map Google Maps place types to our categories
+    if (types.includes('locality') || types.includes('administrative_area_level_2')) return 'City/Municipality';
+    if (types.includes('sublocality') || types.includes('administrative_area_level_3')) return 'Barangay';
+    if (types.includes('neighborhood') || types.includes('sublocality_level_1')) return 'Area';
+    if (types.includes('establishment') || types.includes('point_of_interest')) return 'Landmark';
+    if (types.includes('route')) return 'Road';
+    if (types.includes('premise') || types.includes('street_address')) return 'Address';
+    return 'Location';
+}
+
+function calculateGoogleMapsRelevance(result, searchTerm) {
+    const formattedAddress = result.formatted_address.toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    const types = result.types;
+    
+    let score = 0;
+    
+    // Exact match gets highest score
+    if (formattedAddress.includes(searchLower)) score += 10;
+    
+    // Northern Cebu locations get bonus points
+    if (formattedAddress.includes('bogo')) score += 5;
+    if (formattedAddress.includes('medellin')) score += 5;
+    if (formattedAddress.includes('tabuelan')) score += 4;
+    if (formattedAddress.includes('san remigio')) score += 4;
+    if (formattedAddress.includes('cebu')) score += 2;
+    
+    // Place type bonuses
+    if (types.includes('locality')) score += 4;
+    if (types.includes('sublocality')) score += 3;
+    if (types.includes('establishment')) score += 2;
+    
+    // Specific area types get bonus
+    if (formattedAddress.includes('purok')) score += 3;
+    if (formattedAddress.includes('sitio')) score += 3;
+    if (formattedAddress.includes('barangay')) score += 2;
+    
+    return score;
+}
+
 function getShortAddress(fullAddress) {
     // Extract meaningful address parts for Northern Cebu
     const parts = fullAddress.split(',').map(part => part.trim());
@@ -979,7 +1285,18 @@ function displaySuggestions(suggestionList, searchTerm) {
         
         // Show complete address to distinguish between similar names
         const addressDisplay = suggestion.shortAddress || suggestion.fullName || suggestion.name;
-        const isUserReported = suggestion.source === 'user_reported';
+        const isUserReported = suggestion.source === 'user_reported' || suggestion.source === 'user_reported_exact';
+        const isLocalExact = suggestion.source === 'local_exact';
+        
+        // Add accuracy indicator
+        let accuracyIndicator = '';
+        if (isLocalExact) {
+            accuracyIndicator = '<span class="suggestion-distance" style="color: #28a745;">📍 Precise Location</span>';
+        } else if (suggestion.source === 'local' || suggestion.source === 'local_partial') {
+            accuracyIndicator = '<span class="suggestion-distance" style="color: #17a2b8;">📍 Local Database</span>';
+        } else if (isUserReported) {
+            accuracyIndicator = '<span class="suggestion-distance" style="color: #dc3545;">📍 Relief Location</span>';
+        }
         
         return `
             <div class="suggestion-item" onclick="selectSuggestion(suggestions[${index}])">
@@ -988,7 +1305,7 @@ function displaySuggestions(suggestionList, searchTerm) {
                 <div class="suggestion-details">
                     <span class="suggestion-type">${suggestion.type}</span>
                     ${urgencyIndicator}
-                    ${isUserReported ? '<span class="suggestion-distance">📍 Relief Location</span>' : ''}
+                    ${accuracyIndicator}
                 </div>
             </div>
         `;
@@ -1026,6 +1343,111 @@ async function performGeocodingSearch(searchTerm, originalName) {
     searchBtn.disabled = true;
     
     try {
+        let bestResult = null;
+        
+        // Use Google Maps if available, otherwise fallback to OpenStreetMap
+        if (USE_GOOGLE_MAPS && GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY') {
+            bestResult = await performGoogleMapsGeocodingSearch(searchTerm, originalName);
+        } else {
+            bestResult = await performOpenStreetMapGeocodingSearch(searchTerm, originalName);
+        }
+        
+        resetSearchButton(searchBtn, originalHTML);
+        
+        if (bestResult) {
+            // Handle both Google Maps and OpenStreetMap coordinate formats
+            const coords = bestResult.geometry ? 
+                [bestResult.geometry.location.lat, bestResult.geometry.location.lng] : 
+                [parseFloat(bestResult.lat), parseFloat(bestResult.lon)];
+            const displayName = bestResult.formatted_address || bestResult.display_name;
+            showSearchResult(coords, displayName, 'Found Location');
+            console.log('✅ Location found:', displayName);
+        } else {
+            // If no results found, show a more helpful message
+            alert(`Location "${originalName}" not found in mapping data. This might be a very specific area not yet mapped. Try searching for the nearest barangay or municipality instead.`);
+            console.log('❌ No results found for:', searchTerm);
+        }
+        
+    } catch (error) {
+        resetSearchButton(searchBtn, originalHTML);
+        console.error('❌ Geocoding error:', error);
+        alert('Search failed. Please check your internet connection and try again.');
+    }
+}
+
+async function performGoogleMapsGeocodingSearch(searchTerm, originalName) {
+    try {
+        // Try multiple search variations for better accuracy
+        const searchVariations = [
+            `${originalName}, Northern Cebu, Philippines`,
+            `${originalName}, Cebu, Philippines`,
+            `${searchTerm}, Bogo City, Cebu, Philippines`,
+            `${searchTerm}, Medellin, Cebu, Philippines`,
+            searchTerm
+        ];
+        
+        for (const query of searchVariations) {
+            const encodedQuery = encodeURIComponent(query);
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedQuery}&bounds=${NORTHERN_CEBU_BOUNDS.south},${NORTHERN_CEBU_BOUNDS.west}|${NORTHERN_CEBU_BOUNDS.north},${NORTHERN_CEBU_BOUNDS.east}&region=ph&key=${GOOGLE_MAPS_API_KEY}`;
+            
+            const response = await fetch(url);
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.status === 'OK' && data.results && data.results.length > 0) {
+                    // Filter results to Northern Cebu area and exclude water locations
+                    const filteredResults = data.results.filter(result => {
+                        const location = result.geometry.location;
+                        const lat = location.lat;
+                        const lng = location.lng;
+                        const formattedAddress = result.formatted_address.toLowerCase();
+                        
+                        // Check bounds and land validation
+                        const withinBounds = lat >= NORTHERN_CEBU_BOUNDS.south && 
+                                           lat <= NORTHERN_CEBU_BOUNDS.north && 
+                                           lng >= NORTHERN_CEBU_BOUNDS.west && 
+                                           lng <= NORTHERN_CEBU_BOUNDS.east;
+                        
+                        const isWaterLocation = formattedAddress.includes('sea') ||
+                                              formattedAddress.includes('ocean') ||
+                                              formattedAddress.includes('strait') ||
+                                              formattedAddress.includes('channel') ||
+                                              formattedAddress.includes('bay') ||
+                                              formattedAddress.includes('reef') ||
+                                              result.types.includes('natural_feature');
+                        
+                        const isValidLandLocation = isLocationOnLand([lat, lng]);
+                        
+                        return withinBounds && !isWaterLocation && isValidLandLocation && (
+                            formattedAddress.includes('cebu') || 
+                            formattedAddress.includes('bogo') ||
+                            formattedAddress.includes('medellin') ||
+                            formattedAddress.includes('tabuelan') ||
+                            formattedAddress.includes('san remigio') ||
+                            formattedAddress.includes('tuburan') ||
+                            formattedAddress.includes('asturias') ||
+                            formattedAddress.includes('balamban')
+                        );
+                    });
+                    
+                    if (filteredResults.length > 0) {
+                        return filteredResults[0];
+                    }
+                }
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Google Maps geocoding error:', error);
+        // Fallback to OpenStreetMap
+        return await performOpenStreetMapGeocodingSearch(searchTerm, originalName);
+    }
+}
+
+async function performOpenStreetMapGeocodingSearch(searchTerm, originalName) {
+    try {
         // Try multiple search variations for better accuracy
         const searchVariations = [
             searchTerm,
@@ -1033,8 +1455,6 @@ async function performGeocodingSearch(searchTerm, originalName) {
             `${originalName}, Cebu, Philippines`,
             `${originalName}, Northern Cebu, Philippines`
         ];
-        
-        let bestResult = null;
         
         for (const query of searchVariations) {
             const encodedQuery = encodeURIComponent(query);
@@ -1085,32 +1505,18 @@ async function performGeocodingSearch(searchTerm, originalName) {
                     });
                     
                     if (filteredResults.length > 0) {
-                        bestResult = filteredResults[0];
-                        break;
+                        return filteredResults[0];
                     } else if (results.length > 0) {
-                        bestResult = results[0];
-                        break;
+                        return results[0];
                     }
                 }
             }
         }
         
-        resetSearchButton(searchBtn, originalHTML);
-        
-        if (bestResult) {
-            const coords = [parseFloat(bestResult.lat), parseFloat(bestResult.lon)];
-            showSearchResult(coords, bestResult.display_name, 'Found Location');
-            console.log('✅ Location found:', bestResult.display_name);
-        } else {
-            // If no results found, show a more helpful message
-            alert(`Location "${originalName}" not found in mapping data. This might be a very specific area not yet mapped. Try searching for the nearest barangay or municipality instead.`);
-            console.log('❌ No results found for:', searchTerm);
-        }
-        
+        return null;
     } catch (error) {
-        resetSearchButton(searchBtn, originalHTML);
-        console.error('❌ Geocoding error:', error);
-        alert('Search failed. Please check your internet connection and try again.');
+        console.error('OpenStreetMap geocoding error:', error);
+        return null;
     }
 }
 
@@ -1208,23 +1614,68 @@ function searchLocation() {
         });
 }
 
-function geocodeLocation(query) {
-    // Use Nominatim (OpenStreetMap) geocoding service
-    // Bias search towards Philippines and specifically Cebu
-    const encodedQuery = encodeURIComponent(query);
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&countrycodes=ph&limit=5&addressdetails=1&bounded=1&viewbox=${NORTHERN_CEBU_BOUNDS.west},${NORTHERN_CEBU_BOUNDS.north},${NORTHERN_CEBU_BOUNDS.east},${NORTHERN_CEBU_BOUNDS.south}&layer=address,poi,railway,natural,manmade`;
-    
-    return fetch(url, {
-        headers: {
-            'User-Agent': 'Northern Cebu Earthquake Relief Map'
-        }
-    })
-    .then(response => {
+async function geocodeLocation(query) {
+    // Use Google Maps if available, otherwise fallback to OpenStreetMap
+    if (USE_GOOGLE_MAPS && GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY') {
+        return await geocodeLocationWithGoogleMaps(query);
+    } else {
+        return await geocodeLocationWithOpenStreetMap(query);
+    }
+}
+
+async function geocodeLocationWithGoogleMaps(query) {
+    try {
+        const encodedQuery = encodeURIComponent(query);
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedQuery}&bounds=${NORTHERN_CEBU_BOUNDS.south},${NORTHERN_CEBU_BOUNDS.west}|${NORTHERN_CEBU_BOUNDS.north},${NORTHERN_CEBU_BOUNDS.east}&region=ph&key=${GOOGLE_MAPS_API_KEY}`;
+        
+        const response = await fetch(url);
+        
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        return response.json();
-    });
+        
+        const data = await response.json();
+        
+        if (data.status === 'OK' && data.results) {
+            // Convert Google Maps format to match OpenStreetMap format for compatibility
+            return data.results.map(result => ({
+                lat: result.geometry.location.lat.toString(),
+                lon: result.geometry.location.lng.toString(),
+                display_name: result.formatted_address,
+                type: result.types[0] || 'location',
+                class: result.types.includes('establishment') ? 'amenity' : 'place'
+            }));
+        } else {
+            // Fallback to OpenStreetMap if Google Maps fails
+            return await geocodeLocationWithOpenStreetMap(query);
+        }
+    } catch (error) {
+        console.error('Google Maps geocoding error:', error);
+        // Fallback to OpenStreetMap
+        return await geocodeLocationWithOpenStreetMap(query);
+    }
+}
+
+async function geocodeLocationWithOpenStreetMap(query) {
+    try {
+        const encodedQuery = encodeURIComponent(query);
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&countrycodes=ph&limit=5&addressdetails=1&bounded=1&viewbox=${NORTHERN_CEBU_BOUNDS.west},${NORTHERN_CEBU_BOUNDS.north},${NORTHERN_CEBU_BOUNDS.east},${NORTHERN_CEBU_BOUNDS.south}&layer=address,poi,railway,natural,manmade`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Northern Cebu Earthquake Relief Map'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('OpenStreetMap geocoding error:', error);
+        throw error;
+    }
 }
 
 function showSearchResult(coords, displayName, resultType) {
