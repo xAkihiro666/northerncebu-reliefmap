@@ -11,13 +11,6 @@
 </head>
 
 <body>
-    <header>
-        <div class="header-content">
-            <h1><i class="fas fa-map"></i> Northern Cebu Earthquake Relief Map Guide</h1>
-            <p>🌐 <strong>Public Community Map</strong> - Anyone can view and report relief locations | Real-time sync across all devices</p>
-            <p>Helping relief efforts reach affected communities - Magnitude 6.7/6.9 Earthquake Response</p>
-        </div>
-    </header>
 
     <nav class="control-panel">
         <div class="controls">
@@ -47,7 +40,7 @@
     <main>
         <div class="map-container">
             <div id="map"></div>
-            
+
             <!-- Pinned Locations Dropdown - positioned on map -->
             <div class="pinned-locations-dropdown">
                 <button id="viewPinnedBtn" class="btn btn-info">
@@ -63,14 +56,14 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Report Location Button - positioned on map -->
             <div class="report-location-btn">
                 <button id="reportLocation" class="btn btn-success btn-floating" title="Drop a pin to report location">
                     <i class="fas fa-map-pin"></i>
                 </button>
             </div>
-            
+
             <div class="legend" id="mapLegend">
                 <div class="legend-header">
                     <h3>Map Legend</h3>
@@ -108,9 +101,11 @@
         <div class="info-panel" id="infoPanel">
             <div class="info-content">
                 <h3>🌐 Public Relief Community Map</h3>
-                <p><strong>This is a public server</strong> - anyone can view and add relief locations in real-time. Help identify locations that need assistance!</p>
-                
-                <div style="background: #d4edda; padding: 10px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;">
+                <p><strong>This is a public server</strong> - anyone can view and add relief locations in real-time.
+                    Help identify locations that need assistance!</p>
+
+                <div
+                    style="background: #d4edda; padding: 10px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;">
                     <strong><i class="fas fa-globe"></i> Public Access:</strong><br>
                     • No login required - anyone can participate<br>
                     • Changes sync instantly across all devices<br>
@@ -126,10 +121,12 @@
                     <li><strong>Search locations</strong> using the search box above</li>
                     <li><strong>Share this URL</strong> with others to expand coverage</li>
                 </ul>
-                
-                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #ffc107;">
+
+                <div
+                    style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #ffc107;">
                     <strong><i class="fas fa-info-circle"></i> Community Guidelines:</strong><br>
-                    Please provide accurate information to help relief efforts reach those in need. This map relies on community collaboration.
+                    Please provide accurate information to help relief efforts reach those in need. This map relies on
+                    community collaboration.
                 </div>
                 <div class="emergency-contacts">
                     <h4>Emergency Contacts</h4>
@@ -241,33 +238,42 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
         import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
         import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
         import { firebaseConfig } from './firebase-config.js';
-        
+
         // Initialize Firebase
         try {
             const app = initializeApp(firebaseConfig);
             const db = getFirestore(app);
             const auth = getAuth(app);
-            
+
             // Make Firebase available globally
             window.firebaseApp = app;
             window.firestoreDb = db;
             window.firebaseAuth = auth;
-            
+
             console.log('Firebase SDK loaded successfully');
         } catch (error) {
             console.warn('Firebase initialization failed:', error);
             console.warn('App will fall back to localStorage');
         }
     </script>
-    
+
     <script src="script_clean.js"></script>
+
+    <footer>
+        <div class="footer-content">
+            <h1><i class="fas fa-map"></i> Northern Cebu Earthquake Relief Map Guide</h1>
+            <p> Public Community Map - Anyone can view and report relief locations | Real-time sync across all devices
+            </p>
+            <p>Helping relief efforts reach affected communities - Magnitude 6.7/6.9 Earthquake Response</p>
+        </div>
+    </footer>
 </body>
 
 </html>

@@ -519,13 +519,13 @@ function setupEventListeners() {
 
     // Clear search button functionality
     const clearSearchBtn = document.getElementById('clearSearchBtn');
-
+    
     // Show/hide clear button based on input content
     function toggleClearButton() {
         const hasContent = searchInput.value.trim().length > 0;
         clearSearchBtn.style.display = hasContent ? 'flex' : 'none';
     }
-
+    
     // Clear search input when clear button is clicked
     clearSearchBtn.addEventListener('click', () => {
         searchInput.value = '';
@@ -533,10 +533,10 @@ function setupEventListeners() {
         hideSuggestions();
         toggleClearButton();
     });
-
+    
     // Update clear button visibility on input
     searchInput.addEventListener('input', toggleClearButton);
-
+    
     // Initial state - hide clear button if empty
     toggleClearButton();
 
@@ -2339,16 +2339,16 @@ function removeMarkerFromLayers(coords) {
 function openWazeNavigation(lat, lng, locationName) {
     // Waze deep link format: https://waze.com/ul?ll=lat,lng&navigate=yes&zoom=17
     const wazeUrl = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes&zoom=17`;
-
+    
     // Try to open Waze app first, fallback to web version
     const wazeAppUrl = `waze://?ll=${lat},${lng}&navigate=yes`;
-
+    
     // Create a temporary link to test if Waze app is available
     const tempLink = document.createElement('a');
     tempLink.href = wazeAppUrl;
     tempLink.style.display = 'none';
     document.body.appendChild(tempLink);
-
+    
     // Try to open the app
     try {
         tempLink.click();
@@ -2362,7 +2362,7 @@ function openWazeNavigation(lat, lng, locationName) {
     } finally {
         document.body.removeChild(tempLink);
     }
-
+    
     console.log(`Opening Waze navigation to ${locationName} at coordinates: ${lat}, ${lng}`);
 }
 
