@@ -194,7 +194,6 @@ function initFirebase() {
     // Wait for Firebase to be loaded
     if (window.firestoreDb) {
         db = window.firestoreDb;
-        console.log('🌐 Firebase public server initialized successfully - Real-time sync enabled');
         updateSyncStatus('online', 'Public Server Online');
 
         // Check if this is admin map
@@ -263,7 +262,6 @@ async function saveLocationToFirestore(location) {
         const savePromise = (async () => {
             const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
             const docRef = await addDoc(collection(db, 'relief-locations'), location);
-            console.log('Location saved to Firestore with ID:', docRef.id);
             return docRef.id;
         })();
 
@@ -294,7 +292,6 @@ async function loadLocationsFromFirestore() {
             userReportedLocations.push(data);
         });
 
-        console.log(`Loaded ${userReportedLocations.length} locations from Firestore`);
         return userReportedLocations;
     } catch (error) {
         console.error('Error loading from Firestore:', error);
@@ -312,7 +309,6 @@ async function deleteLocationFromFirestore(firestoreId) {
     try {
         const { deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
         await deleteDoc(doc(db, 'relief-locations', firestoreId));
-        console.log('✅ Location deleted from Firestore:', firestoreId);
         return true;
     } catch (error) {
         console.error('❌ Error deleting from Firestore:', error);
@@ -391,7 +387,6 @@ async function setupRealtimeListener() {
                     if (!exists) {
                         userReportedLocations.push(data);
                         markerUpdateQueue.push({ type: 'add', data: data });
-                        console.log('New location queued:', data.name);
                     }
                 }
 
@@ -406,7 +401,6 @@ async function setupRealtimeListener() {
                         markerUpdateQueue.push({ type: 'remove', coords: userReportedLocations[index].coords });
                         userReportedLocations[index] = data;
                         markerUpdateQueue.push({ type: 'add', data: data });
-                        console.log('Location updated:', data.name);
                     }
                 }
 
@@ -418,7 +412,6 @@ async function setupRealtimeListener() {
                         userReportedLocations.splice(index, 1);
                         markerUpdateQueue.push({ type: 'remove', coords: removedLocation.coords });
 
-                        console.log('Location removed:', removedLocation.name);
                         map.closePopup();
                     }
                 }
@@ -812,24 +805,194 @@ const commonLocations = [
     { name: 'Sitio Mango', address: 'Sitio Mango, Bogo City, Cebu', type: 'Sitio', coords: [11.0550, 124.0040] }
 ];
 
-// Autocomplete functions
-function handleSearchInput() {
-    const searchTerm = document.getElementById('searchLocation').value.trim();
+// Search suggestion handling
+let searchDebounceTimer = null;
 
-    if (searchTimeout) {
-        clearTimeout(searchTimeout);
+function clearSearchMarker() {
+    if (currentSearchMarker) {
+        map.removeLayer(currentSearchMarker);
+        currentSearchMarker = null;
     }
+}
 
-    if (searchTerm.length < 2) {
-        hideSuggestions();
+function handleSearchInput(e) {
+    // Handle cases where event might not have target
+    let query = '';
+    if (e && e.target && e.target.value) {
+        query = e.target.value.trim();
+    } else {
+        // Fallback to getting value directly from search input
+        const searchInput = document.getElementById('searchLocation');
+        if (searchInput && searchInput.value) {
+            query = searchInput.value.trim();
+        }
+    }
+    
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    
+    if (!suggestionsContainer) {
+        console.warn('Search suggestions container not found');
         return;
     }
 
-    // Debounce search requests
-    searchTimeout = setTimeout(() => {
-        fetchSuggestions(searchTerm);
+    clearTimeout(searchDebounceTimer);
+    
+    if (!query) {
+        suggestionsContainer.innerHTML = '';
+        suggestionsContainer.classList.remove('show');
+        // Clear search marker when search is cleared
+        clearSearchMarker();
+        return;
+    }
+    
+    searchDebounceTimer = setTimeout(() => {
+        try {
+            const results = searchCommonLocations(query);
+            renderSearchSuggestions(results);
+        } catch (error) {
+            console.error('Search suggestions error:', error);
+        }
     }, 300);
 }
+
+function searchCommonLocations(query) {
+    const searchLower = query.toLowerCase();
+    
+    // Define priority areas (higher priority locations)
+    const priorityAreas = [
+        'Bogo City', 'Medellin', 'San Remigio', 'Tabuelan', 'Tuburan', 'Asturias', 
+        'Balamban', 'Danao City', 'Carmen', 'Catmon', 'Sogod', 'Borbon',
+        'Dakit', 'Pandan', 'Sudlonon', 'Nailon', 'Banban', 'La Paz', 'Siocon', 
+        'Lambusan', 'Calcalan', 'Gawaygaway', 'Anapog', 'Batad', 'Bangcasan',
+        'Canhabagat', 'Daanglungsod', 'Upper Mahawak', 'Lamintak', 'Mafio', 'Bagtik',
+        'San Rem Luyang', 'Kinawahan', 'Sanrem Guyong', 'Sanmig',
+        'Argawanon Bancal', 'Kanluhangon', 'Tacup', 'Cogon Victoria',
+        'Purok 4 Argawanon Bancal', 'Jovencio', 'Simbawan', 'Panabilan', 
+        'Nailon Center', 'Nailon Elementary School', 'Nailon Chapel'
+    ];
+    
+    // Filter locations that match the search query
+    const filteredLocations = commonLocations.filter(location => 
+        location.name.toLowerCase().includes(searchLower) ||
+        location.address.toLowerCase().includes(searchLower) ||
+        location.type.toLowerCase().includes(searchLower)
+    );
+    
+    // Sort by priority and relevance
+    filteredLocations.sort((a, b) => {
+        const aNameMatch = a.name.toLowerCase().startsWith(searchLower);
+        const bNameMatch = b.name.toLowerCase().startsWith(searchLower);
+        const aIsPriority = priorityAreas.includes(a.name);
+        const bIsPriority = priorityAreas.includes(b.name);
+        
+        // Priority 1: Exact name matches from priority areas
+        if (aNameMatch && aIsPriority && !(bNameMatch && bIsPriority)) return -1;
+        if (bNameMatch && bIsPriority && !(aNameMatch && aIsPriority)) return 1;
+        
+        // Priority 2: Any exact name matches
+        if (aNameMatch && !bNameMatch) return -1;
+        if (!aNameMatch && bNameMatch) return 1;
+        
+        // Priority 3: Priority areas (even partial matches)
+        if (aIsPriority && !bIsPriority) return -1;
+        if (!aIsPriority && bIsPriority) return 1;
+        
+        // Priority 4: Sort by location type importance
+        const typeOrder = ['City', 'Municipality', 'Barangay', 'Barangay Center', 'Town Center', 
+                          'Landmark', 'School', 'Religious', 'Area', 'Sitio', 'Purok', 'Coastal Area'];
+        const aTypeIndex = typeOrder.indexOf(a.type);
+        const bTypeIndex = typeOrder.indexOf(b.type);
+        
+        if (aTypeIndex !== bTypeIndex) {
+            return (aTypeIndex === -1 ? 999 : aTypeIndex) - (bTypeIndex === -1 ? 999 : bTypeIndex);
+        }
+        
+        // Final: Sort alphabetically
+        return a.name.localeCompare(b.name);
+    });
+    
+    // Return in the format expected by renderSearchSuggestions
+    const results = filteredLocations.map(location => ({
+        lat: location.coords[0],
+        lon: location.coords[1],
+        display_name: location.address,
+        name: location.name,
+        type: location.type
+    }));
+    
+    return results;
+}
+
+function renderSearchSuggestions(results) {
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    
+    if (!suggestionsContainer) {
+        return;
+    }
+    
+    if (!results || results.length === 0) {
+        suggestionsContainer.innerHTML = '<div class="suggestion-item">No results found</div>';
+        suggestionsContainer.classList.add('show');
+        return;
+    }
+    
+    const limitedResults = results.slice(0, 8);
+    suggestionsContainer.innerHTML = limitedResults.map((result) => {
+        const safeDisplay = result.display_name.replace(/"/g, '&quot;');
+        const typeIcon = getLocationTypeIcon(result.type);
+        return `
+            <div class="suggestion-item" data-lat="${result.lat}" data-lon="${result.lon}" data-display="${safeDisplay}">
+                <div class="suggestion-main">
+                    <i class="${typeIcon}"></i>
+                    ${result.name}
+                </div>
+                <div class="suggestion-address">${result.display_name}</div>
+                <div class="suggestion-details">
+                    <span class="suggestion-type">${result.type}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    suggestionsContainer.classList.add('show');
+    
+    // Add click event listeners to suggestions
+    Array.from(suggestionsContainer.querySelectorAll('.suggestion-item')).forEach(item => {
+        item.addEventListener('click', () => {
+            const lat = parseFloat(item.getAttribute('data-lat'));
+            const lon = parseFloat(item.getAttribute('data-lon'));
+            const displayName = item.getAttribute('data-display');
+            const locationName = item.querySelector('.suggestion-main').textContent.trim();
+            
+            suggestionsContainer.classList.remove('show');
+            document.getElementById('searchLocation').value = locationName;
+            showSearchResult([lat, lon], displayName, locationName);
+        });
+    });
+}
+
+function getLocationTypeIcon(type) {
+    const icons = {
+        'City': 'fas fa-city',
+        'Municipality': 'fas fa-building',
+        'Barangay': 'fas fa-home',
+        'Sitio': 'fas fa-map-pin',
+        'Purok': 'fas fa-map-marker-alt',
+        'School': 'fas fa-school',
+        'Landmark': 'fas fa-landmark',
+        'Religious': 'fas fa-church',
+        'Area': 'fas fa-map',
+        'Barangay Center': 'fas fa-dot-circle',
+        'Town Center': 'fas fa-city',
+        'Coastal Area': 'fas fa-water'
+    };
+    return icons[type] || 'fas fa-map-marker-alt';
+}
+
+// Global variable to track current search result marker
+let currentSearchMarker = null;
+
+// Autocomplete functions (using enhanced search suggestion handling above)
 
 function handleSearchKeydown(e) {
     const suggestionsDiv = document.getElementById('searchSuggestions');
@@ -846,7 +1009,8 @@ function handleSearchKeydown(e) {
     } else if (e.key === 'Enter') {
         e.preventDefault();
         if (currentSuggestionIndex >= 0 && suggestionItems[currentSuggestionIndex]) {
-            selectSuggestion(suggestions[currentSuggestionIndex]);
+            // Trigger click on the highlighted suggestion
+            suggestionItems[currentSuggestionIndex].click();
         } else {
             searchLocation();
         }
@@ -854,6 +1018,15 @@ function handleSearchKeydown(e) {
         hideSuggestions();
         document.getElementById('searchLocation').blur();
     }
+}
+
+function hideSuggestions() {
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    if (suggestionsContainer) {
+        suggestionsContainer.classList.remove('show');
+        suggestionsContainer.innerHTML = '';
+    }
+    currentSuggestionIndex = -1;
 }
 
 function highlightSuggestion() {
@@ -1447,7 +1620,6 @@ function selectSuggestion(suggestion) {
     } else {
         // Need to geocode - use the full address for better results
         const searchTerm = suggestion.shortAddress || suggestion.name;
-        console.log('🔍 Geocoding selected suggestion:', searchTerm);
         performGeocodingSearch(searchTerm, suggestion.name);
     }
 }
@@ -1478,11 +1650,9 @@ async function performGeocodingSearch(searchTerm, originalName) {
                 [parseFloat(bestResult.lat), parseFloat(bestResult.lon)];
             const displayName = bestResult.formatted_address || bestResult.display_name;
             showSearchResult(coords, displayName, 'Found Location');
-            console.log('✅ Location found:', displayName);
         } else {
             // If no results found, show a more helpful message
             alert(`Location "${originalName}" not found in mapping data. This might be a very specific area not yet mapped. Try searching for the nearest barangay or municipality instead.`);
-            console.log('❌ No results found for:', searchTerm);
         }
 
     } catch (error) {
@@ -1658,7 +1828,16 @@ function searchLocation() {
     searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     searchBtn.disabled = true;
 
-    // First, search in user reported locations
+    // First, search in local common locations (highest priority)
+    const localResults = searchCommonLocations(searchTerm);
+    if (localResults && localResults.length > 0) {
+        const bestResult = localResults[0]; // Use first (best) result
+        showSearchResult([bestResult.lat, bestResult.lon], bestResult.display_name, bestResult.name);
+        resetSearchButton(searchBtn, originalHTML);
+        return;
+    }
+
+    // Second, search in user reported locations
     const userReported = userReportedLocations.find(location =>
         location.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -1669,7 +1848,7 @@ function searchLocation() {
         return;
     }
 
-    // If not found in user reports, use geocoding API
+    // Last resort: use geocoding API
     geocodeLocation(searchTerm)
         .then(results => {
             resetSearchButton(searchBtn, originalHTML);
@@ -1797,15 +1976,16 @@ async function geocodeLocationWithOpenStreetMap(query) {
 
 function showSearchResult(coords, displayName, resultType) {
     // Remove previous search marker if exists
-    if (searchMarker) {
-        map.removeLayer(searchMarker);
+    if (currentSearchMarker) {
+        map.removeLayer(currentSearchMarker);
+        currentSearchMarker = null;
     }
 
     // Center map on the location
     map.setView(coords, 14);
 
     // Add search result marker
-    searchMarker = L.marker(coords, {
+    currentSearchMarker = L.marker(coords, {
         icon: L.divIcon({
             className: 'search-result-marker',
             html: '<i class="fas fa-search" style="color: #007bff; font-size: 20px; background: white; padding: 5px; border-radius: 50%; border: 2px solid #007bff;"></i>',
@@ -1841,21 +2021,21 @@ function showSearchResult(coords, displayName, resultType) {
         </div>
     `;
 
-    searchMarker.bindPopup(popupContent).openPopup();
+    currentSearchMarker.bindPopup(popupContent).openPopup();
 
     // Auto-remove the marker after 30 seconds
     setTimeout(() => {
-        if (searchMarker) {
-            map.removeLayer(searchMarker);
-            searchMarker = null;
+        if (currentSearchMarker) {
+            map.removeLayer(currentSearchMarker);
+            currentSearchMarker = null;
         }
     }, 30000);
 }
 
 function clearSearchResult() {
-    if (searchMarker) {
-        map.removeLayer(searchMarker);
-        searchMarker = null;
+    if (currentSearchMarker) {
+        map.removeLayer(currentSearchMarker);
+        currentSearchMarker = null;
     }
     window.currentSearchResult = null;
     map.closePopup();
@@ -1967,21 +2147,15 @@ function handleMapClickForReport(e) {
 }
 
 function closeReportModal() {
-    console.log('🔄 Closing report modal...');
-
     const modal = document.getElementById('reportModal');
     const form = document.getElementById('reportForm');
 
     if (modal) {
         modal.style.display = 'none';
-        console.log('✅ Modal hidden');
-    } else {
-        console.error('❌ Modal element not found');
     }
 
     if (form) {
         form.reset();
-        console.log('✅ Form reset');
 
         // Re-enable submit button if it was disabled
         const submitButton = form.querySelector('button[type="submit"]');
@@ -1989,29 +2163,22 @@ function closeReportModal() {
             submitButton.disabled = false;
             submitButton.innerHTML = 'Submit Report';
         }
-    } else {
-        console.error('❌ Form element not found');
     }
 
     // Remove temporary marker
     if (window.tempReportMarker) {
         map.removeLayer(window.tempReportMarker);
         window.tempReportMarker = null;
-        console.log('✅ Temporary marker removed');
     }
 
     // Clear search result data
     window.currentSearchResult = null;
 
     pendingReportCoords = null;
-
-    console.log('✅ Report modal closed successfully');
 }
 
 async function submitLocationReport(e) {
     e.preventDefault();
-
-    console.log('📝 Form submission started...');
 
     if (!pendingReportCoords) {
         systemAlert('No location selected. Please try again.');
@@ -2075,8 +2242,6 @@ async function submitLocationReport(e) {
             verified: false
         };
 
-        console.log('💾 Saving location report...', userReport);
-
         let savedId = null;
         let saveMethod = 'unknown';
 
@@ -2103,7 +2268,6 @@ async function submitLocationReport(e) {
             }
         } else {
             // Skip Firebase, save directly to localStorage
-            console.log('📱 Firebase not configured, saving locally only');
             savedId = saveToLocalStorage(userReport);
             saveMethod = 'localStorage';
         }
@@ -2122,8 +2286,6 @@ async function submitLocationReport(e) {
         // Update pinned locations list
         updatePinnedLocationsList();
 
-        console.log(`✅ Location saved via ${saveMethod} and added to map`);
-
         // Remove temporary marker
         if (window.tempReportMarker) {
             map.removeLayer(window.tempReportMarker);
@@ -2132,8 +2294,6 @@ async function submitLocationReport(e) {
 
         // Show success message
         showSuccessMessage('Location reported successfully! 🌐 Now visible to all users on the public server. Thank you for helping the relief efforts!');
-
-        console.log('🎉 Report submission completed successfully');
 
     } catch (error) {
         console.error('❌ Error during form submission:', error);
@@ -2147,8 +2307,7 @@ async function submitLocationReport(e) {
         return; // Don't close modal on error
     }
 
-    // Close modal - moved to finally block to ensure it always runs
-    console.log('🔄 Closing modal...');
+    // Close modal
     closeReportModal();
 
     // Re-enable submit button
@@ -2296,10 +2455,6 @@ async function loadUserReportedLocations() {
             addUserReportedMarker(report);
         });
 
-        // Update pinned locations list
-        updatePinnedLocationsList();
-
-        console.log(`Loaded ${locations.length} locations successfully`);
     } catch (error) {
         console.error('Error loading locations:', error);
 
@@ -2340,7 +2495,6 @@ async function removeUserReportedLocation(identifier) {
 
     // If still not found, try to find by coordinates match (fallback)
     if (reportIndex === -1) {
-        console.warn('Could not find location by ID, attempting coordinate-based search');
         // This is a fallback - not ideal but helps with edge cases
         reportIndex = userReportedLocations.findIndex(report => {
             // Convert identifier back to check if it's a coordinate-based temp ID
@@ -2349,20 +2503,16 @@ async function removeUserReportedLocation(identifier) {
     }
 
     if (reportIndex === -1) {
-        console.error('Location not found with identifier:', identifier);
-        console.log('Available locations:', userReportedLocations.map(r => ({ id: r.id, firestoreId: r.firestoreId, name: r.name })));
         systemAlert('Location not found. It may have already been removed by another user.');
         return;
     }
 
     report = userReportedLocations[reportIndex];
-    console.log('Found location to delete:', { id: report.id, firestoreId: report.firestoreId, name: report.name });
 
     // Try to delete from Firestore first
     let deletedFromFirestore = false;
     
     if (report.firestoreId) {
-        console.log('Attempting to delete from Firestore:', report.firestoreId);
         deletedFromFirestore = await deleteLocationFromFirestore(report.firestoreId);
         
         if (!deletedFromFirestore) {
@@ -2370,11 +2520,6 @@ async function removeUserReportedLocation(identifier) {
             systemAlert('Failed to delete location. You may not have permission to delete this pin, or there was a connection error.');
             return;
         }
-        
-        console.log('✅ Successfully deleted from Firestore');
-    } else {
-        // No Firestore ID - this is a local-only item
-        console.log('Deleting local-only item');
     }
 
     // Only proceed with local deletion if Firestore deletion succeeded
@@ -2398,8 +2543,6 @@ async function removeUserReportedLocation(identifier) {
 
     // Update pinned locations list
     updatePinnedLocationsList();
-    
-    console.log('✅ Location removal complete');
 }
 
 // Pinned locations dropdown functions
@@ -2534,7 +2677,6 @@ function openWazeNavigation(lat, lng, locationName) {
         document.body.removeChild(tempLink);
     }
 
-    console.log(`Opening Waze navigation to ${locationName} at coordinates: ${lat}, ${lng}`);
 }
 
 // Initialize the application
@@ -2547,7 +2689,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await initMap();
         
         // Check for URL hash to zoom to specific location
-        checkUrlHash();
+        // checkUrlHash();
     }, 1000);
     
     // Banner close functionality
@@ -2563,47 +2705,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Check URL hash for coordinates and zoom
-function checkUrlHash() {
-    const hash = window.location.hash.substring(1); // Remove the #
-    if (hash) {
-        const parts = hash.split(',');
-        if (parts.length === 3) {
-            const lat = parseFloat(parts[0]);
-            const lng = parseFloat(parts[1]);
-            const zoom = parseInt(parts[2]);
-            
-            if (!isNaN(lat) && !isNaN(lng) && !isNaN(zoom)) {
-                console.log(`📍 Zooming to location: ${lat}, ${lng} at zoom ${zoom}`);
-                
-                // Set map view
-                if (map) {
-                    map.setView([lat, lng], zoom);
-                    
-                    // Add a temporary marker with pulse animation
-                    const pulseIcon = L.divIcon({
-                        className: 'pulse-marker',
-                        html: '<div class="pulse-ring"></div><div class="pulse-dot"></div>',
-                        iconSize: [30, 30]
-                    });
-                    
-                    const tempMarker = L.marker([lat, lng], { icon: pulseIcon }).addTo(map);
-                    
-                    // Remove the pulse marker after 5 seconds
-                    setTimeout(() => {
-                        map.removeLayer(tempMarker);
-                    }, 5000);
-                    
-                    // Clear the hash after zooming
-                    setTimeout(() => {
-                        history.replaceState(null, null, ' ');
-                    }, 100);
-                }
-            }
-        }
-    }
-}
-
 // Utility functions for external use
 window.cancelReportingMode = cancelReportingMode;
 window.removeUserReportedLocation = removeUserReportedLocation;
@@ -2612,18 +2713,34 @@ window.pinHelpFromSearch = pinHelpFromSearch;
 
 // Debug functions for testing
 window.testModalClose = function () {
-    console.log('🧪 Testing modal close functionality...');
     closeReportModal();
 };
 
 window.testModalOpen = function () {
-    console.log('🧪 Testing modal open functionality...');
     document.getElementById('reportModal').style.display = 'flex';
+};
+
+window.testSearchSuggestions = function () {
+    const container = document.getElementById('searchSuggestions');
+    if (container) {
+        container.innerHTML = `
+            <div class="suggestion-item">
+                <div class="suggestion-main">
+                    <i class="fas fa-city"></i>
+                    Test Location
+                </div>
+                <div class="suggestion-address">Test Address, Cebu</div>
+                <div class="suggestion-details">
+                    <span class="suggestion-type">Test</span>
+                </div>
+            </div>
+        `;
+        container.classList.add('show');
+    }
 };
 
 // Emergency bypass function - use this if form is stuck
 window.forceLocalMode = function () {
-    console.log('🚨 Forcing local-only mode (bypassing Firebase)');
     window.firestoreDb = null;
     db = null;
     updateSyncStatus('offline', '📱 Local Mode - Firebase bypassed');

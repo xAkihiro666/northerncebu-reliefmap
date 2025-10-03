@@ -10,10 +10,10 @@ body {
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #f8f9fa;
-    min-height: 100vh;
+    height: 100vh;
     color: #333;
-    /* Prevent horizontal scroll on mobile */
-    overflow-x: hidden;
+    /* Prevent both horizontal and vertical scroll */
+    overflow: hidden;
     /* Improve text rendering on mobile */
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
@@ -28,6 +28,7 @@ main {
     flex-direction: column;
     background: #f8f9fa;
     min-height: 0;
+    overflow: hidden;
 }
 
 footer {
@@ -69,7 +70,8 @@ footer {
 
     .map-container {
         height: calc(100vh - 220px);
-        min-height: 300px;
+        min-height: 250px;
+        overflow: hidden;
     }
 
     body {
@@ -117,6 +119,7 @@ footer {
     position: relative;
     flex: 1;
     min-width: 200px;
+    overflow: visible; /* Ensure suggestions can overflow */
     z-index: 2000;
 }
 
@@ -225,7 +228,8 @@ footer {
     position: relative;
     height: calc(100vh - 200px);
     margin: 0;
-    min-height: 400px;
+    min-height: 300px;
+    overflow: hidden;
 }
 
 #map {
@@ -238,7 +242,7 @@ footer {
 .legend {
     position: absolute;
     top: 10px;
-    right: 20px;
+    left: 20px;
     background: rgba(255, 255, 255, 0.9);
     padding: 1rem;
     border-radius: 8px;
@@ -411,17 +415,11 @@ footer {
         position: absolute;
         top: auto;
         bottom: 95px; /* Just above the green report button with safe spacing */
+        left: 10px;
         right: 10px;
-        left: auto;
-        width: auto;
-        max-width: calc(100vw - 20px);
-        font-size: 0.8rem;
+        max-width: none;
         padding: 0.75rem;
-    }
-
-    .legend h3 {
-        font-size: 0.85rem;
-        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
     }
 
     .legend-section {
@@ -485,7 +483,8 @@ footer {
 
     .map-container {
         height: calc(100vh - 200px);
-        min-height: 350px;
+        min-height: 250px;
+        overflow: hidden;
     }
 
     .directions-panel {
@@ -533,6 +532,8 @@ footer {
 
     .legend {
         bottom: 85px; /* Just above the green report button on small screens with safe spacing */
+        left: 10px;
+        right: 10px;
         padding: 0.5rem;
         font-size: 0.7rem;
     }
@@ -565,7 +566,8 @@ footer {
 
     .map-container {
         height: calc(100vh - 180px);
-        min-height: 300px;
+        min-height: 250px;
+        overflow: hidden;
     }
 
     .form-actions .btn {
@@ -1145,19 +1147,31 @@ footer {
 }
 
 /* Search suggestions responsive */
-.search-suggestions {
+.search-suggestions,
+#searchSuggestions {
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
-    background: white;
-    border: 1px solid #ddd;
+    background: #ffffff !important;
+    border: 2px solid #007bff !important; /* Make border more visible for debugging */
     border-top: none;
-    border-radius: 0 0 5px 5px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 3000;
-    max-height: 200px;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important; /* Stronger shadow */
+    max-height: 300px;
+    z-index: 99999 !important;
     overflow-y: auto;
+    display: none !important; /* Hidden by default */
+    width: 100%;
+    min-height: 50px; /* Ensure minimum height */
+}
+
+/* Show suggestions when active */
+.search-suggestions.show,
+#searchSuggestions.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* Additional suggestion styling */
@@ -1165,6 +1179,15 @@ footer {
     font-weight: 600;
     color: #2c3e50;
     margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.suggestion-main i {
+    color: #007bff;
+    width: 16px;
+    text-align: center;
 }
 
 .suggestion-address {
@@ -1294,7 +1317,8 @@ footer {
 
     .map-container {
         height: calc(100vh - 160px);
-        min-height: 250px;
+        min-height: 200px;
+        overflow: hidden;
     }
 
     .info-panel {
@@ -1318,7 +1342,8 @@ footer {
 
     .map-container {
         height: calc(100vh - 240px);
-        min-height: 200px;
+        min-height: 150px;
+        overflow: hidden;
     }
 
     .control-panel {
@@ -1331,6 +1356,8 @@ footer {
     }
 
     .legend {
+        left: 5px;
+        right: 5px;
         padding: 0.5rem;
         font-size: 0.7rem;
     }
