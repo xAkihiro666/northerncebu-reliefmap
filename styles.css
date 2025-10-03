@@ -433,10 +433,10 @@ footer {
     .pinned-list {
         position: fixed;
         top: auto;
-        left: 20px;
-        right: 20px;
+        left: 18px;
+        right: 18px;
         bottom: 10px;
-        min-width: 345px !important;
+        min-width: 390px !important;
         max-width: auto;
         max-height: 60vh;
         margin-top: 0;
@@ -1583,12 +1583,13 @@ body.reporting-mode #map {
     position: absolute;
     bottom: 100%;
     left: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    min-width: 350px;
-    max-width: 400px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid #28a745;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.2);
+    min-width: 385px;
+    max-width: 440px;
     max-height: 100vh;
     overflow: hidden;
     z-index: 5100;
@@ -1597,12 +1598,12 @@ body.reporting-mode #map {
 }
 
 .pinned-list-header {
-    background: linear-gradient(135deg, #17a2b8, #138496);
+    background: linear-gradient(135deg, #28a745, #20c997);
     padding: 0.75rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-radius: 8px 8px 0 0;
+    border-radius: 10px 10px 0 0;
 }
 
 .pinned-list-header h4 {
@@ -2362,6 +2363,39 @@ body.reporting-mode #map {
 .btn-large:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+}
+
+/* Remove mobile tap highlight */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Allow text selection for inputs and content areas */
+input, textarea, .info-content, .welcome-guide-body, .pinned-list-content {
+    -webkit-user-select: text;
+    -khtml-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Specific mobile touch behavior fixes */
+.report-location-btn,
+.pinned-locations-dropdown .btn,
+.pinned-item,
+.btn,
+button {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
 }
 
 /* Mobile responsive for welcome guide */
