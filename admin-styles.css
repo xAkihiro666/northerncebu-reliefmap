@@ -662,6 +662,36 @@
     font-size: 0.95rem;
 }
 
+/* Download Excel Button */
+#downloadExcelBtn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 0.625rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+#downloadExcelBtn:hover {
+    background: #229954;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+#downloadExcelBtn:active {
+    transform: translateY(0);
+}
+
+#downloadExcelBtn i {
+    font-size: 1rem;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .admin-content {

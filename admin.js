@@ -105,6 +105,9 @@ function setupEventListeners() {
         btn.disabled = false;
     });
 
+    // Download Excel button
+    document.getElementById('downloadExcelBtn').addEventListener('click', downloadExcel);
+
     // Delete modal
     document.getElementById('closeDeleteModal').addEventListener('click', closeDeleteModal);
     document.getElementById('cancelDelete').addEventListener('click', closeDeleteModal);
@@ -888,6 +891,85 @@ function showSessionWarning(minutes) {
     const warning = confirm(`⚠️ Your session will expire in ${minutes} minute(s) due to inactivity. Click OK to stay logged in.`);
     if (warning && sessionManager) {
         sessionManager.updateActivity();
+    }
+}
+
+// Download Excel function
+function downloadExcel() {
+    if (!window.XLSX) {
+        showError('Excel library not loaded. Please refresh the page.');
+        return;
+    }
+
+    if (filteredLocations.length === 0) {
+        showError('No data to export. Please adjust your filters.');
+        return;
+    }
+
+    try {
+        // Prepare data for Excel
+        const excelData = filteredLocations.map(location => {
+            return {
+                'Location Name': location.name,
+                'Latitude': location.coords[0],
+                'Longitude': location.coords[1],
+                'Urgency Level': location.urgencyLevel.toUpperCase(),
+                'Source': location.source.toUpperCase(),
+                'Relief Needs': location.reliefNeeds.join(', '),
+                'Additional Info': location.additionalInfo || '',
+                'Reporter Name': location.reporterName || 'Anonymous',
+                'Reporter Contact': location.reporterContact || '',
+                'Reported Date': new Date(location.reportedAt).toLocaleString(),
+                'Status': location.reached ? 'Reached' : 'Not Reached',
+                'Response Team': location.reachedByTeam || '',
+                'Reached By': location.reachedBy || '',
+                'Reached Date': location.reachedAt ? new Date(location.reachedAt).toLocaleString() : '',
+                'User ID': location.userId || '',
+                'Document ID': location.firestoreId
+            };
+        });
+
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(excelData);
+
+        // Set column widths
+        const colWidths = [
+            { wch: 30 }, // Location Name
+            { wch: 12 }, // Latitude
+            { wch: 12 }, // Longitude
+            { wch: 15 }, // Urgency Level
+            { wch: 15 }, // Source
+            { wch: 40 }, // Relief Needs
+            { wch: 50 }, // Additional Info
+            { wch: 20 }, // Reporter Name
+            { wch: 20 }, // Reporter Contact
+            { wch: 20 }, // Reported Date
+            { wch: 15 }, // Status
+            { wch: 25 }, // Response Team
+            { wch: 25 }, // Reached By
+            { wch: 20 }, // Reached Date
+            { wch: 30 }, // User ID
+            { wch: 30 }  // Document ID
+        ];
+        ws['!cols'] = colWidths;
+
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Relief Locations');
+
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const filename = `Northern_Cebu_Relief_Map_${timestamp}.xlsx`;
+
+        // Download file
+        XLSX.writeFile(wb, filename);
+
+        showSuccess(`Excel file downloaded: ${filename}`);
+        console.log(`Downloaded ${filteredLocations.length} locations to Excel`);
+
+    } catch (error) {
+        console.error('Error downloading Excel:', error);
+        showError('Failed to download Excel file. Please try again.');
     }
 }
 
