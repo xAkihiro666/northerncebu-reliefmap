@@ -320,7 +320,45 @@ async function deleteLocationFromFirestore(firestoreId) {
     }
 }
 
-// Real-time listener for new locations
+// Debounce function for performance
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Batch update markers for better performance
+let markerUpdateQueue = [];
+let isProcessingMarkers = false;
+
+async function processMarkerQueue() {
+    if (isProcessingMarkers || markerUpdateQueue.length === 0) return;
+    
+    isProcessingMarkers = true;
+    const batch = markerUpdateQueue.splice(0, 10); // Process 10 at a time
+    
+    batch.forEach(item => {
+        if (item.type === 'add') {
+            addUserReportedMarker(item.data);
+        } else if (item.type === 'remove') {
+            removeMarkerFromLayers(item.coords);
+        }
+    });
+    
+    isProcessingMarkers = false;
+    
+    if (markerUpdateQueue.length > 0) {
+        requestAnimationFrame(() => processMarkerQueue());
+    }
+}
+
+// Real-time listener for new locations with performance optimization
 async function setupRealtimeListener() {
     if (!db) return;
 
@@ -328,7 +366,10 @@ async function setupRealtimeListener() {
         const { onSnapshot, collection } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
 
         unsubscribeListener = onSnapshot(collection(db, 'relief-locations'), (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
+            const changes = snapshot.docChanges();
+            
+            // Batch process changes for better performance
+            changes.forEach((change) => {
                 if (change.type === 'added') {
                     const data = change.doc.data();
                     data.firestoreId = change.doc.id;
@@ -337,9 +378,23 @@ async function setupRealtimeListener() {
                     const exists = userReportedLocations.find(loc => loc.firestoreId === data.firestoreId);
                     if (!exists) {
                         userReportedLocations.push(data);
-                        addUserReportedMarker(data);
-                        updatePinnedLocationsList();
-                        console.log('New location added via real-time sync:', data.name);
+                        markerUpdateQueue.push({ type: 'add', data: data });
+                        console.log('New location queued:', data.name);
+                    }
+                }
+
+                if (change.type === 'modified') {
+                    const modifiedId = change.doc.id;
+                    const index = userReportedLocations.findIndex(loc => loc.firestoreId === modifiedId);
+                    if (index > -1) {
+                        const data = change.doc.data();
+                        data.firestoreId = modifiedId;
+                        
+                        // Remove old marker and add updated one
+                        markerUpdateQueue.push({ type: 'remove', coords: userReportedLocations[index].coords });
+                        userReportedLocations[index] = data;
+                        markerUpdateQueue.push({ type: 'add', data: data });
+                        console.log('Location updated:', data.name);
                     }
                 }
 
@@ -349,26 +404,32 @@ async function setupRealtimeListener() {
                     if (index > -1) {
                         const removedLocation = userReportedLocations[index];
                         userReportedLocations.splice(index, 1);
-                        removeMarkerFromLayers(removedLocation.coords);
+                        markerUpdateQueue.push({ type: 'remove', coords: removedLocation.coords });
 
-                        // Update localStorage backup
-                        localStorage.setItem('userReportedLocations', JSON.stringify(userReportedLocations));
-
-                        // Update pinned locations list
-                        updatePinnedLocationsList();
-
-                        console.log('Location removed via real-time sync:', removedLocation.name);
-
-                        // Close popup if it's showing the deleted location
+                        console.log('Location removed:', removedLocation.name);
                         map.closePopup();
                     }
                 }
             });
+            
+            // Process marker updates in batches
+            processMarkerQueue();
+            
+            // Debounced list update
+            debouncedListUpdate();
+            
+            // Update localStorage
+            localStorage.setItem('userReportedLocations', JSON.stringify(userReportedLocations));
         });
     } catch (error) {
         console.error('Error setting up real-time listener:', error);
     }
 }
+
+// Debounced list update
+const debouncedListUpdate = debounce(() => {
+    updatePinnedLocationsList();
+}, 500);
 
 // Fallback localStorage functions
 function saveToLocalStorage(location) {
@@ -467,12 +528,24 @@ function isLocationOnLand(coords) {
 
 // Initialize the map
 async function initMap() {
-    // Create map centered on Northern Cebu
-    map = L.map('map').setView(NORTHERN_CEBU_CENTER, 10);
+    // Create map centered on Northern Cebu with performance options
+    map = L.map('map', {
+        preferCanvas: true, // Use Canvas renderer for better performance
+        zoomControl: true,
+        attributionControl: true,
+        fadeAnimation: true,
+        zoomAnimation: true,
+        markerZoomAnimation: true
+    }).setView(NORTHERN_CEBU_CENTER, 10);
 
-    // Add tile layer
+    // Add tile layer with performance optimizations
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+        minZoom: 8,
+        updateWhenIdle: false, // Update tiles while panning
+        updateWhenZooming: false, // Don't update while zooming
+        keepBuffer: 2 // Keep tiles in buffer for smoother panning
     }).addTo(map);
 
     // Initialize layer groups - only user reported locations

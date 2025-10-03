@@ -1710,6 +1710,16 @@ footer {
     background: rgba(255, 255, 255, 0.3);
 }
 
+/* Performance optimizations */
+#map {
+    will-change: transform;
+}
+
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+    will-change: transform;
+}
+
 /* Pulse marker for location highlighting */
 .pulse-marker {
     position: relative;
