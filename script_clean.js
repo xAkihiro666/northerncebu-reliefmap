@@ -616,6 +616,11 @@ function setupEventListeners() {
     // Welcome guide functionality
     document.getElementById('startUsingMap').addEventListener('click', hideWelcomeGuide);
 
+    // Info panel close button
+    document.getElementById('closeInfo').addEventListener('click', () => {
+        document.getElementById('infoPanel').style.display = 'none';
+    });
+
     // Directions panel close button
     document.getElementById('closeDirections').addEventListener('click', () => {
         document.getElementById('directionsPanel').style.display = 'none';
