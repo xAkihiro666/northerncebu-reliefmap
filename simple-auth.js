@@ -23,22 +23,25 @@ export function initSimpleAuth() {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
-            console.log('User identified:', user.uid);
+            console.log('User authenticated:', user.uid, user.displayName || user.email);
             updateAuthStatus('connected');
         } else {
             currentUser = null;
-            console.log('User not identified');
+            console.log('User not authenticated');
             updateAuthStatus('anonymous');
+            
+            // Only sign in anonymously if not on admin map
+            if (!window.isAdminMap) {
+                // Auto sign-in anonymously to get a user ID for pin ownership
+                signInAnonymously(auth).catch(error => {
+                    console.warn('Anonymous sign-in failed:', error);
+                    // Generate a local user ID as fallback
+                    currentUser = { uid: 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) };
+                    localStorage.setItem('localUserId', currentUser.uid);
+                    updateAuthStatus('local');
+                });
+            }
         }
-    });
-    
-    // Auto sign-in anonymously to get a user ID
-    signInAnonymously(auth).catch(error => {
-        console.warn('Anonymous sign-in failed:', error);
-        // Generate a local user ID as fallback
-        currentUser = { uid: 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) };
-        localStorage.setItem('localUserId', currentUser.uid);
-        updateAuthStatus('local');
     });
     
     return true;
@@ -68,24 +71,52 @@ export function canDeleteLocation(location) {
 // Update UI based on auth status
 function updateAuthStatus(status) {
     const authIndicator = document.getElementById('authIndicator');
+    const userStatus = document.getElementById('userStatus');
+    const adminLink = document.querySelector('.admin-link');
+    
     if (authIndicator) {
         // Don't update if this is admin map
         if (window.isAdminMap) {
             return; // Admin map handles its own auth indicator
         }
         
-        switch(status) {
-            case 'connected':
-                authIndicator.innerHTML = '<i class="fas fa-user"></i> Public User';
-                authIndicator.className = 'auth-indicator connected';
-                break;
-            case 'local':
-                authIndicator.innerHTML = '<i class="fas fa-user"></i> Public User';
-                authIndicator.className = 'auth-indicator local';
-                break;
-            default:
-                authIndicator.innerHTML = '<i class="fas fa-user"></i> Public User';
-                authIndicator.className = 'auth-indicator anonymous';
+        // Check if user is logged in
+        if (currentUser && currentUser.displayName) {
+            // User is logged in - show their name
+            if (userStatus) {
+                userStatus.textContent = currentUser.displayName;
+            }
+            authIndicator.className = 'auth-indicator connected';
+            authIndicator.href = '#'; // Disable link when logged in
+            authIndicator.style.cursor = 'default';
+            authIndicator.title = 'Logged in as ' + currentUser.displayName;
+            
+            // Change "Admin" button to "Dashboard" for logged-in users
+            if (adminLink) {
+                adminLink.innerHTML = '<i class="fas fa-th-large"></i> Dashboard';
+                adminLink.title = 'Go to your dashboard';
+            }
+            
+            // Show user admin banner
+            const banner = document.getElementById('userAdminBanner');
+            if (banner && !sessionStorage.getItem('bannerClosed')) {
+                banner.style.display = 'flex';
+            }
+        } else {
+            // Not logged in - show public user
+            if (userStatus) {
+                userStatus.textContent = 'Public User';
+            }
+            authIndicator.className = 'auth-indicator anonymous';
+            authIndicator.href = 'user-login.html'; // Enable link to login
+            authIndicator.style.cursor = 'pointer';
+            authIndicator.title = 'Click to login or sign up';
+            
+            // Show "Admin" button for non-logged-in users
+            if (adminLink) {
+                adminLink.innerHTML = '<i class="fas fa-shield-alt"></i> Admin';
+                adminLink.title = 'Admin panel login';
+            }
         }
     }
 }

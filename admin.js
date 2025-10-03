@@ -10,6 +10,10 @@ let unsubscribeListener = null;
 let selectedLocationForDeletion = null;
 let selectedLocationForDetails = null;
 
+// Security instances
+let rateLimiter = null;
+let sessionManager = null;
+
 // Wait for Firebase to load
 function waitForFirebase() {
     return new Promise((resolve, reject) => {
@@ -31,11 +35,17 @@ function waitForFirebase() {
     });
 }
 
-// Initialize admin panel
 async function initAdmin() {
     try {
         await waitForFirebase();
         console.log('Firebase loaded successfully');
+
+        // Initialize security modules
+        if (window.SecurityModule) {
+            rateLimiter = new window.SecurityModule.LoginRateLimiter();
+            sessionManager = new window.SecurityModule.SessionManager();
+            console.log('Security modules initialized');
+        }
 
         // Check authentication state
         auth.onAuthStateChanged(async (user) => {
@@ -43,15 +53,26 @@ async function initAdmin() {
                 currentUser = user;
                 showDashboard();
                 await loadAllLocations();
+                
+                // Start session monitoring
+                if (sessionManager) {
+                    sessionManager.startMonitoring(
+                        () => handleSessionTimeout(),
+                        (minutes) => showSessionWarning(minutes)
+                    );
+                }
             } else {
                 showLoginScreen();
+                if (sessionManager) {
+                    sessionManager.stopMonitoring();
+                }
             }
         });
 
         setupEventListeners();
     } catch (error) {
         console.error('Failed to initialize admin panel:', error);
-        showError('Failed to connect to database. Please refresh the page.');
+        showError('Failed to initialize. Please refresh the page.');
     }
 }
 
@@ -114,6 +135,26 @@ async function handleLogin(e) {
     errorDiv.style.display = 'none';
     errorDiv.textContent = '';
 
+    // Security: Check if account is locked out
+    if (rateLimiter) {
+        const lockoutStatus = rateLimiter.isLockedOut(email);
+        if (lockoutStatus.locked) {
+            errorDiv.textContent = `🔒 Account temporarily locked due to too many failed attempts. Please try again in ${lockoutStatus.remainingMinutes} minute(s).`;
+            errorDiv.style.display = 'block';
+            return;
+        }
+    }
+
+    // Security: Validate email format
+    if (window.SecurityModule) {
+        const emailValidation = window.SecurityModule.EmailValidator.validate(email);
+        if (!emailValidation.isValid) {
+            errorDiv.textContent = emailValidation.error;
+            errorDiv.style.display = 'block';
+            return;
+        }
+    }
+
     try {
         const { signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js');
         
@@ -125,11 +166,29 @@ async function handleLogin(e) {
 
         await signInWithEmailAndPassword(auth, email, password);
         
-        // Success - onAuthStateChanged will handle the rest
-        console.log('Login successful');
+        // Success - clear failed attempts
+        if (rateLimiter) {
+            rateLimiter.clearAttempts(email);
+        }
+        console.log('✅ Login successful');
         
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('❌ Login error:', error);
+        
+        // Security: Record failed attempt
+        if (rateLimiter) {
+            const result = rateLimiter.recordFailedAttempt(email);
+            if (result.shouldLockout) {
+                errorDiv.textContent = `🔒 Too many failed attempts. Account locked for 15 minutes.`;
+                errorDiv.style.display = 'block';
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                submitBtn.disabled = false;
+                return;
+            } else if (result.remainingAttempts <= 2) {
+                console.warn(`⚠️ ${result.remainingAttempts} attempts remaining before lockout`);
+            }
+        }
         
         // Reset button
         const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -145,6 +204,12 @@ async function handleLogin(e) {
             errorMessage = 'No admin account found with this email.';
         } else if (error.code === 'auth/wrong-password') {
             errorMessage = 'Incorrect password.';
+            if (rateLimiter) {
+                const remaining = rateLimiter.getRemainingAttempts(email);
+                if (remaining <= 2) {
+                    errorMessage += ` (${remaining} attempts remaining before lockout)`;
+                }
+            }
         } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Too many failed attempts. Please try again later.';
         } else if (error.code === 'auth/invalid-credential') {
@@ -198,6 +263,59 @@ function showDashboard() {
     // Update user email display
     if (currentUser && currentUser.email) {
         document.getElementById('adminUserEmail').textContent = currentUser.email;
+        
+        // Check if master admin and update UI
+        const isMasterAdmin = currentUser.email === 'charleszoiyana@gmail.com';
+        const viewMapBtn = document.getElementById('viewMapBtn');
+        const mapBtnText = document.getElementById('mapBtnText');
+        const mapAccessText = document.getElementById('mapAccessText');
+        const adminPanelTitle = document.getElementById('adminPanelTitle');
+        const adminPanelSubtitle = document.getElementById('adminPanelSubtitle');
+        const adminPanelIcon = document.getElementById('adminPanelIcon');
+        
+        if (isMasterAdmin) {
+            // Master admin sees admin map link
+            viewMapBtn.href = 'admin-map.html';
+            viewMapBtn.title = 'View admin map with full delete privileges';
+            mapBtnText.textContent = 'Admin Map';
+            
+            // Master admin panel title
+            if (adminPanelTitle) adminPanelTitle.textContent = 'Master Admin Panel';
+            if (adminPanelSubtitle) adminPanelSubtitle.textContent = 'Full Relief Map Management';
+            if (adminPanelIcon) adminPanelIcon.className = 'fas fa-shield-alt';
+            
+            // Update info text
+            if (mapAccessText) {
+                mapAccessText.innerHTML = `
+                    <strong style="color: #0066cc;">Master Admin Access</strong>
+                    <p style="margin: 0.25rem 0 0 0; color: #333; font-size: 0.9rem;">
+                        Click <strong>"Admin Map"</strong> to access the dedicated admin map with full delete privileges. 
+                        You can delete any pin and manage all locations.
+                    </p>
+                `;
+            }
+        } else {
+            // Regular users see public map link
+            viewMapBtn.href = 'index.html';
+            viewMapBtn.title = 'View public map (read-only)';
+            mapBtnText.textContent = 'View Map';
+            
+            // Regular user admin panel title
+            if (adminPanelTitle) adminPanelTitle.textContent = 'User Admin Dashboard';
+            if (adminPanelSubtitle) adminPanelSubtitle.textContent = 'Relief Map Coordination';
+            if (adminPanelIcon) adminPanelIcon.className = 'fas fa-th-large';
+            
+            // Update info text
+            if (mapAccessText) {
+                mapAccessText.innerHTML = `
+                    <strong style="color: #0066cc;">User Admin Access</strong>
+                    <p style="margin: 0.25rem 0 0 0; color: #333; font-size: 0.9rem;">
+                        Click <strong>"View Map"</strong> to access the public map. 
+                        You can view and add pins, but cannot delete them. Use the checkboxes here to mark locations as reached.
+                    </p>
+                `;
+            }
+        }
     }
 }
 
@@ -309,19 +427,52 @@ function renderTable() {
 
     emptyState.style.display = 'none';
 
+    // Check if current user is master admin
+    const isMasterAdmin = currentUser && currentUser.email === 'charleszoiyana@gmail.com';
+
     const html = filteredLocations.map(location => {
         const urgencyColor = getUrgencyColor(location.urgencyLevel);
         const urgencyText = location.urgencyLevel.charAt(0).toUpperCase() + location.urgencyLevel.slice(1);
         const date = new Date(location.reportedAt).toLocaleString();
         const reliefNeeds = location.reliefNeeds.join(', ');
         const reporter = location.reporterName || 'Anonymous';
+        const isReached = location.reached || false;
+
+        // Different actions for master admin vs regular users
+        const actionButtons = isMasterAdmin ? `
+            <button class="btn-icon btn-info" onclick="viewDetails('${location.firestoreId}')" title="View Details">
+                <i class="fas fa-eye"></i>
+            </button>
+            <label class="checkbox-container" title="${isReached ? 'Mark as not reached' : 'Mark as reached'}">
+                <input type="checkbox" 
+                       ${isReached ? 'checked' : ''} 
+                       onchange="toggleReached('${location.firestoreId}', this.checked)">
+                <span class="checkmark"></span>
+                <span class="checkbox-label">${isReached ? 'Reached' : 'Mark Reached'}</span>
+            </label>
+            <button class="btn-icon btn-danger" onclick="showDeleteModal('${location.firestoreId}')" title="Delete">
+                <i class="fas fa-trash"></i>
+            </button>
+        ` : `
+            <button class="btn-icon btn-info" onclick="viewDetails('${location.firestoreId}')" title="View Details">
+                <i class="fas fa-eye"></i>
+            </button>
+            <label class="checkbox-container" title="${isReached ? 'Mark as not reached' : 'Mark as reached'}">
+                <input type="checkbox" 
+                       ${isReached ? 'checked' : ''} 
+                       onchange="toggleReached('${location.firestoreId}', this.checked)">
+                <span class="checkmark"></span>
+                <span class="checkbox-label">${isReached ? 'Reached' : 'Mark Reached'}</span>
+            </label>
+        `;
 
         return `
-            <tr data-id="${location.firestoreId}">
+            <tr data-id="${location.firestoreId}" class="${isReached ? 'reached-location' : ''}">
                 <td>
                     <strong>${escapeHtml(location.name)}</strong>
                     <br>
                     <small class="text-muted">${location.coords[0].toFixed(4)}, ${location.coords[1].toFixed(4)}</small>
+                    ${isReached ? `<br><span class="reached-badge"><i class="fas fa-check-circle"></i> Reached${location.reachedByTeam ? ' by ' + escapeHtml(location.reachedByTeam) : ''}</span>` : ''}
                 </td>
                 <td>
                     <span class="urgency-badge" style="background-color: ${urgencyColor};">
@@ -339,12 +490,7 @@ function renderTable() {
                     <small>${date}</small>
                 </td>
                 <td class="actions-cell">
-                    <button class="btn-icon btn-info" onclick="viewDetails('${location.firestoreId}')" title="View Details">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn-icon btn-danger" onclick="showDeleteModal('${location.firestoreId}')" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    ${actionButtons}
                 </td>
             </tr>
         `;
@@ -508,6 +654,36 @@ function viewDetails(firestoreId) {
                 </div>
             </div>
 
+            ${location.reached ? `
+                <div class="detail-section" style="background: #d4edda; border-left: 4px solid #28a745; padding: 1rem; border-radius: 6px;">
+                    <h4><i class="fas fa-check-circle" style="color: #28a745;"></i> Response Status</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Status:</label>
+                            <span style="color: #28a745; font-weight: 600;">✓ Reached</span>
+                        </div>
+                        ${location.reachedByTeam ? `
+                            <div class="detail-item">
+                                <label>Response Team:</label>
+                                <span style="font-weight: 600;">${escapeHtml(location.reachedByTeam)}</span>
+                            </div>
+                        ` : ''}
+                        ${location.reachedBy ? `
+                            <div class="detail-item">
+                                <label>Marked By:</label>
+                                <span>${escapeHtml(location.reachedBy)}</span>
+                            </div>
+                        ` : ''}
+                        ${location.reachedAt ? `
+                            <div class="detail-item">
+                                <label>Reached At:</label>
+                                <span>${new Date(location.reachedAt).toLocaleString()}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : ''}
+
             <div class="detail-section">
                 <h4><i class="fas fa-database"></i> Database Information</h4>
                 <div class="detail-grid">
@@ -577,9 +753,130 @@ function showError(message) {
     }, 3000);
 }
 
-// Make functions globally accessible
+// Toggle reached status
+async function toggleReached(firestoreId, isReached) {
+    // If marking as reached, show team name modal
+    if (isReached) {
+        showTeamNameModal(firestoreId);
+    } else {
+        // Unmarking as reached - proceed directly
+        await updateReachedStatus(firestoreId, false, null);
+    }
+}
+
+// Show team name modal
+function showTeamNameModal(firestoreId) {
+    const modal = document.getElementById('teamNameModal');
+    const input = document.getElementById('teamNameInput');
+    const confirmBtn = document.getElementById('confirmTeamName');
+    const cancelBtn = document.getElementById('cancelTeamName');
+    const closeBtn = document.getElementById('closeTeamModal');
+    
+    // Pre-fill with saved team name
+    const savedTeamName = localStorage.getItem('userTeamName');
+    input.value = savedTeamName || (currentUser ? currentUser.displayName : '');
+    
+    // Show modal
+    modal.style.display = 'flex';
+    input.focus();
+    input.select();
+    
+    // Handle confirm
+    const handleConfirm = async () => {
+        const teamName = input.value.trim();
+        if (!teamName) {
+            input.style.borderColor = '#dc3545';
+            input.focus();
+            return;
+        }
+        
+        // Save team name for future use
+        localStorage.setItem('userTeamName', teamName);
+        
+        // Close modal
+        modal.style.display = 'none';
+        
+        // Update status
+        await updateReachedStatus(firestoreId, true, teamName);
+        
+        // Cleanup
+        cleanup();
+    };
+    
+    // Handle cancel
+    const handleCancel = () => {
+        modal.style.display = 'none';
+        // Uncheck the checkbox
+        const checkbox = document.querySelector(`input[onchange*="${firestoreId}"]`);
+        if (checkbox) checkbox.checked = false;
+        cleanup();
+    };
+    
+    // Cleanup event listeners
+    const cleanup = () => {
+        confirmBtn.removeEventListener('click', handleConfirm);
+        cancelBtn.removeEventListener('click', handleCancel);
+        closeBtn.removeEventListener('click', handleCancel);
+        input.removeEventListener('keypress', handleEnter);
+    };
+    
+    // Handle Enter key
+    const handleEnter = (e) => {
+        if (e.key === 'Enter') {
+            handleConfirm();
+        }
+    };
+    
+    // Add event listeners
+    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener('click', handleCancel);
+    closeBtn.addEventListener('click', handleCancel);
+    input.addEventListener('keypress', handleEnter);
+}
+
+// Update reached status in Firestore
+async function updateReachedStatus(firestoreId, isReached, teamName) {
+    try {
+        const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+        
+        await updateDoc(doc(db, 'relief-locations', firestoreId), {
+            reached: isReached,
+            reachedAt: isReached ? new Date().toISOString() : null,
+            reachedBy: isReached ? (currentUser ? currentUser.email : 'Unknown') : null,
+            reachedByTeam: isReached ? teamName : null
+        });
+        
+        const message = isReached 
+            ? `✅ Location marked as reached by ${teamName}` 
+            : 'Location marked as not reached';
+        showSuccess(message);
+        
+        console.log(`Location ${firestoreId} marked as ${isReached ? 'reached' : 'not reached'}${isReached ? ' by ' + teamName : ''}`);
+        
+    } catch (error) {
+        console.error('Error updating reached status:', error);
+        showError('Failed to update status. Please try again.');
+    }
+}
+
+// Session timeout handler
+function handleSessionTimeout() {
+    alert('⏱️ Your session has expired due to inactivity. Please login again.');
+    handleLogout();
+}
+
+// Session warning handler
+function showSessionWarning(minutes) {
+    const warning = confirm(`⚠️ Your session will expire in ${minutes} minute(s) due to inactivity. Click OK to stay logged in.`);
+    if (warning && sessionManager) {
+        sessionManager.updateActivity();
+    }
+}
+
+// Make functions globally available
 window.showDeleteModal = showDeleteModal;
 window.viewDetails = viewDetails;
+window.toggleReached = toggleReached;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', initAdmin);

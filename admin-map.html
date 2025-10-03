@@ -311,12 +311,20 @@
             // Check authentication
             onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    // Admin is logged in
-                    window.isAdminAuthenticated = true;
-                    window.adminUser = user;
-                    document.getElementById('adminEmail').textContent = `Admin: ${user.email}`;
-                    document.getElementById('logoutBtn').style.display = 'inline-block';
-                    console.log('🛡️ Admin authenticated:', user.email);
+                    // Check if user is MASTER ADMIN
+                    if (user.email === 'charleszoiyana@gmail.com') {
+                        // Master admin - allow access
+                        window.isAdminAuthenticated = true;
+                        window.adminUser = user;
+                        document.getElementById('adminEmail').textContent = `Admin: ${user.email}`;
+                        document.getElementById('logoutBtn').style.display = 'inline-block';
+                        console.log('🛡️ Master Admin authenticated:', user.email);
+                    } else {
+                        // Regular user - redirect to public map
+                        console.log('⚠️ Regular user detected - redirecting to public map');
+                        alert('This is the master admin map. Regular users should use the public map.');
+                        window.location.href = 'index.html';
+                    }
                 } else {
                     // Not logged in - redirect to admin panel
                     console.log('❌ No admin session - redirecting to login');

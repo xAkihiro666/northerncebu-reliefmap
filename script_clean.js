@@ -1952,9 +1952,18 @@ async function submitLocationReport(e) {
     }
 
     try {
+        // Get user ID for ownership tracking
+        let userId = null;
+        if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+            userId = window.firebaseAuth.currentUser.uid;
+        } else if (window.getCurrentUserId) {
+            userId = window.getCurrentUserId();
+        }
+
         // Create user report object
         const userReport = {
             id: 'user_' + Date.now(),
+            userId: userId || 'anonymous', // Track who created this pin
             createdBy: window.getCurrentUserId ? window.getCurrentUserId() : 'anonymous',
             name: document.getElementById('locationName').value,
             coords: [pendingReportCoords.lat, pendingReportCoords.lng],
@@ -2054,14 +2063,18 @@ async function submitLocationReport(e) {
 }
 
 function addUserReportedMarker(report) {
-    const urgencyColor = getUrgencyColor(report.urgencyLevel);
+    // If location is reached, use green color; otherwise use urgency color
+    const isReached = report.reached || false;
+    const markerColor = isReached ? '#28a745' : getUrgencyColor(report.urgencyLevel);
+    const badgeText = isReached ? '✓' : 'U';
+    const badgeColor = isReached ? '#28a745' : '#17a2b8';
 
     const icon = L.divIcon({
         className: 'user-reported-marker',
         html: `
             <div style="position: relative;">
-                <i class="fas fa-map-marker-alt" style="color: ${urgencyColor}; font-size: 18px;"></i>
-                <div class="user-reported-badge">U</div>
+                <i class="fas fa-map-marker-alt" style="color: ${markerColor}; font-size: 18px;"></i>
+                <div class="user-reported-badge" style="background-color: ${badgeColor};">${badgeText}</div>
             </div>
         `,
         iconSize: [25, 25],
@@ -2090,8 +2103,31 @@ function createUserReportPopup(report) {
     // Use a unique identifier that works for both local and Firestore items
     const uniqueId = report.firestoreId || report.id || `temp_${Date.now()}`;
 
-    // Check if current user can delete this location (admin only)
-    const canDelete = window.isAdminAuthenticated || false;
+    // Check if current user can delete this location
+    let canDelete = false;
+    let deleteReason = '';
+    
+    // Get current user ID
+    const currentUserId = window.getCurrentUserId ? window.getCurrentUserId() : null;
+    
+    // Master admin can delete everything
+    if (window.isAdminAuthenticated && window.adminUser && window.adminUser.email === 'charleszoiyana@gmail.com') {
+        canDelete = true;
+        deleteReason = 'Master Admin';
+    }
+    // Regular users can delete their own pins
+    else if (currentUserId && report.userId && report.userId === currentUserId) {
+        canDelete = true;
+        deleteReason = 'Your pin';
+    }
+    // Check if user is authenticated and owns this pin
+    else if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+        const authUserId = window.firebaseAuth.currentUser.uid;
+        if (report.userId && report.userId === authUserId) {
+            canDelete = true;
+            deleteReason = 'Your pin';
+        }
+    }
 
     // Create appropriate action button
     const actionButton = canDelete ?
@@ -2099,12 +2135,26 @@ function createUserReportPopup(report) {
             <i class="fas fa-trash"></i> Remove
         </button>` :
         `<span class="text-muted" style="font-size: 0.8rem; padding: 0.5rem;">
-            <i class="fas fa-lock"></i> Only admins can remove locations
+            <i class="fas fa-lock"></i> Only the creator or master admin can remove this
         </span>`;
+
+    // Check if location has been reached
+    const isReached = report.reached || false;
+    const reachedBadge = isReached ? `
+        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 0.75rem; margin: 0.5rem 0; border-radius: 4px;">
+            <p style="margin: 0; color: #155724; font-weight: 600;">
+                <i class="fas fa-check-circle"></i> Response Status: Reached
+            </p>
+            ${report.reachedByTeam ? `<p style="margin: 0.25rem 0 0 0; color: #155724; font-size: 0.9rem;">
+                <strong>Team Responding:</strong> ${report.reachedByTeam}
+            </p>` : ''}
+        </div>
+    ` : '';
 
     return `
         <div class="popup-content">
             <h4><i class="fas fa-map-marker-alt"></i> ${report.name} <span style="font-size: 12px; color: #17a2b8;">[USER REPORTED]</span></h4>
+            ${reachedBadge}
             <p><strong>Source:</strong> ${sourceBadge}</p>
             <p><strong>Urgency:</strong> ${urgencyBadge}</p>
             <p><strong>Relief Needs:</strong> ${report.reliefNeeds.join(', ')}</p>
@@ -2383,8 +2433,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Wait a bit for Firebase to load
     setTimeout(async () => {
         await initMap();
+        
+        // Check for URL hash to zoom to specific location
+        checkUrlHash();
     }, 1000);
+    
+    // Banner close functionality
+    const closeBanner = document.getElementById('closeBanner');
+    if (closeBanner) {
+        closeBanner.addEventListener('click', () => {
+            const banner = document.getElementById('userAdminBanner');
+            if (banner) {
+                banner.style.display = 'none';
+                sessionStorage.setItem('bannerClosed', 'true');
+            }
+        });
+    }
 });
+
+// Check URL hash for coordinates and zoom
+function checkUrlHash() {
+    const hash = window.location.hash.substring(1); // Remove the #
+    if (hash) {
+        const parts = hash.split(',');
+        if (parts.length === 3) {
+            const lat = parseFloat(parts[0]);
+            const lng = parseFloat(parts[1]);
+            const zoom = parseInt(parts[2]);
+            
+            if (!isNaN(lat) && !isNaN(lng) && !isNaN(zoom)) {
+                console.log(`📍 Zooming to location: ${lat}, ${lng} at zoom ${zoom}`);
+                
+                // Set map view
+                if (map) {
+                    map.setView([lat, lng], zoom);
+                    
+                    // Add a temporary marker with pulse animation
+                    const pulseIcon = L.divIcon({
+                        className: 'pulse-marker',
+                        html: '<div class="pulse-ring"></div><div class="pulse-dot"></div>',
+                        iconSize: [30, 30]
+                    });
+                    
+                    const tempMarker = L.marker([lat, lng], { icon: pulseIcon }).addTo(map);
+                    
+                    // Remove the pulse marker after 5 seconds
+                    setTimeout(() => {
+                        map.removeLayer(tempMarker);
+                    }, 5000);
+                    
+                    // Clear the hash after zooming
+                    setTimeout(() => {
+                        history.replaceState(null, null, ' ');
+                    }, 100);
+                }
+            }
+        }
+    }
+}
 
 // Utility functions for external use
 window.cancelReportingMode = cancelReportingMode;

@@ -51,8 +51,8 @@
         <!-- Header -->
         <nav class="admin-header">
             <div class="admin-header-left">
-                <h1><i class="fas fa-shield-alt"></i> Admin Panel</h1>
-                <span class="admin-subtitle">Relief Map Management</span>
+                <h1><i class="fas fa-shield-alt" id="adminPanelIcon"></i> <span id="adminPanelTitle">Admin Panel</span></h1>
+                <span class="admin-subtitle" id="adminPanelSubtitle">Relief Map Management</span>
             </div>
             <div class="admin-header-right">
                 <div class="admin-user-info">
@@ -62,8 +62,8 @@
                 <button id="logoutBtn" class="btn btn-secondary btn-sm">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
-                <a href="admin-map.html" class="btn btn-info btn-sm" title="View admin map with full delete privileges">
-                    <i class="fas fa-map"></i> Admin Map
+                <a href="index.html" id="viewMapBtn" class="btn btn-info btn-sm" title="View map">
+                    <i class="fas fa-map"></i> <span id="mapBtnText">View Map</span>
                 </a>
             </div>
         </nav>
@@ -111,14 +111,13 @@
             </div>
 
             <!-- Admin Map Access Info -->
-            <div class="info-box" style="background: #e7f3ff; border-left: 4px solid #0066cc; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+            <div class="info-box" id="mapAccessInfo" style="background: #e7f3ff; border-left: 4px solid #0066cc; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <i class="fas fa-info-circle" style="color: #0066cc; font-size: 1.5rem;"></i>
-                    <div>
-                        <strong style="color: #0066cc;">Admin Map Access</strong>
+                    <div id="mapAccessText">
+                        <strong style="color: #0066cc;">Map Access</strong>
                         <p style="margin: 0.25rem 0 0 0; color: #333; font-size: 0.9rem;">
-                            Click <strong>"Admin Map"</strong> to access a dedicated admin map with full delete privileges. 
-                            This is separate from the public map (index.html) where regular users can only view and add pins.
+                            Loading...
                         </p>
                     </div>
                 </div>
@@ -228,6 +227,35 @@
         </div>
     </div>
 
+    <!-- Team Name Modal -->
+    <div id="teamNameModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #28a745; color: white;">
+                <h3><i class="fas fa-users"></i> Response Team</h3>
+                <button id="closeTeamModal" class="close-btn" style="color: white;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; color: #666;">
+                    <i class="fas fa-info-circle"></i> Enter your response team name to mark this location as reached.
+                </p>
+                <div class="form-group">
+                    <label for="teamNameInput" style="font-weight: 600; margin-bottom: 0.5rem; display: block;">
+                        <i class="fas fa-user-friends"></i> Team Name:
+                    </label>
+                    <input type="text" id="teamNameInput" class="form-control" 
+                           placeholder="e.g., Red Cross Team Alpha" 
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 1rem;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelTeamName" class="btn btn-secondary">Cancel</button>
+                <button id="confirmTeamName" class="btn" style="background: #28a745; color: white;">
+                    <i class="fas fa-check"></i> Mark as Reached
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
@@ -253,6 +281,7 @@
         }
     </script>
 
+    <script type="module" src="security.js"></script>
     <script src="admin.js"></script>
 </body>
 

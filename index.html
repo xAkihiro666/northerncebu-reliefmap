@@ -18,11 +18,11 @@
                 <i class="fas fa-circle" id="syncIcon"></i>
                 <span id="syncText">Connecting...</span>
             </div>
-            <div id="authIndicator" class="auth-indicator">
-                <i class="fas fa-user"></i> Public User
-            </div>
+            <a href="user-login.html" id="authIndicator" class="auth-indicator" title="Click to login or sign up">
+                <i class="fas fa-user"></i> <span id="userStatus">Public User</span>
+            </a>
             <a href="admin.html" class="btn btn-secondary btn-sm admin-link">
-                <i class="fas fa-shield-alt"></i> Admin Panel
+                <i class="fas fa-shield-alt"></i> Admin
             </a>
         </div>
         <div class="search-box">
@@ -36,6 +36,18 @@
             <button id="searchBtn"><i class="fas fa-search"></i></button>
         </div>
     </nav>
+
+    <!-- User Admin Banner (hidden by default, shown when logged in) -->
+    <div id="userAdminBanner" class="user-admin-banner" style="display: none;">
+        <div class="banner-content">
+            <i class="fas fa-info-circle"></i>
+            <span>
+                <strong>User Admin Mode:</strong> You can view and add pins here. 
+                Go to your <a href="admin.html" class="banner-link">Dashboard</a> to mark places you've reached or responded to.
+            </span>
+        </div>
+        <button id="closeBanner" class="banner-close">&times;</button>
+    </div>
 
     <main>
         <div class="map-container">
