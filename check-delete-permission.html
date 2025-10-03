@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Delete Permission</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Delete Permission Checker</h1>
+        <p>This tool checks if you can delete pins and helps diagnose issues.</p>
+        
+        <div id="status"></div>
+        
+        <button onclick="checkPermissions()">Check My Permissions</button>
+        <button onclick="showFirestoreRules()">Show Required Firestore Rules</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+        import { getFirestore, collection, getDocs, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        
+        // Import Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGCRJE8tGPmNBZpYiGdTZGxSqKlGPKiYs",
+            authDomain: "northern-cebu-relief-public.firebaseapp.com",
+            projectId: "northern-cebu-relief-public",
+            storageBucket: "northern-cebu-relief-public.firebasestorage.app",
+            messagingSenderId: "1089781992859",
+            appId: "1:1089781992859:web:0e5e0f0e0e0e0e0e0e0e0e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.auth = auth;
+        window.db = db;
+
+        window.checkPermissions = async function() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            
+            statusDiv.innerHTML = '<div class="info">🔄 Checking permissions...</div>';
+            resultsDiv.innerHTML = '';
+
+            // Check 1: Authentication
+            const user = auth.currentUser;
+            if (!user) {
+                statusDiv.innerHTML = `
+                    <div class="error">❌ NOT LOGGED IN</div>
+                    <p>You must be logged in to delete pins.</p>
+                    <p><strong>Fix:</strong> Go to the map and click "Public User" to login.</p>
+                `;
+                return;
+            }
+
+            statusDiv.innerHTML = `
+                <div class="success">✅ LOGGED IN</div>
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>User ID:</strong> ${user.uid}</p>
+                <p><strong>Display Name:</strong> ${user.displayName || 'Not set'}</p>
+            `;
+
+            // Check 2: Load locations
+            try {
+                const locationsRef = collection(db, 'relief-locations');
+                const snapshot = await getDocs(locationsRef);
+                
+                let myPins = 0;
+                let otherPins = 0;
+                let pinsWithoutUserId = 0;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.userId === user.uid) {
+                        myPins++;
+                    } else if (data.userId) {
+                        otherPins++;
+                    } else {
+                        pinsWithoutUserId++;
+                    }
+                });
+
+                resultsDiv.innerHTML += `
+                    <div class="info">
+                        <h3>📍 Pin Statistics:</h3>
+                        <p><strong>Your pins:</strong> ${myPins}</p>
+                        <p><strong>Other users' pins:</strong> ${otherPins}</p>
+                        <p><strong>Pins without userId:</strong> ${pinsWithoutUserId}</p>
+                    </div>
+                `;
+
+                if (pinsWithoutUserId > 0) {
+                    resultsDiv.innerHTML += `
+                        <div class="warning">
+                            <h3>⚠️ Warning:</h3>
+                            <p>${pinsWithoutUserId} pins don't have a userId field.</p>
+                            <p>These are old pins created before the user system.</p>
+                            <p><strong>Only master admin can delete these.</strong></p>
+                        </div>
+                    `;
+                }
+
+                if (myPins === 0) {
+                    resultsDiv.innerHTML += `
+                        <div class="warning">
+                            <p>You haven't created any pins yet.</p>
+                            <p>Create a test pin to test deletion.</p>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="error">
+                        <h3>❌ Error loading locations:</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        };
+
+        window.showFirestoreRules = function() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="info">
+                    <h3>📋 Required Firestore Security Rules</h3>
+                    <p>Copy these rules and paste them in Firebase Console:</p>
+                    <p><strong>Firebase Console → Firestore Database → Rules</strong></p>
+                    <pre>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /relief-locations/{document} {
+      allow read: if true;
+      allow create: if true;
+      
+      // Delete permissions
+      allow delete: if request.auth != null && (
+        request.auth.token.email == 'charleszoiyana@gmail.com'
+        ||
+        resource.data.userId == request.auth.uid
+      );
+      
+      // Update permissions
+      allow update: if request.auth != null && (
+        request.auth.token.email == 'charleszoiyana@gmail.com'
+        ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['reached', 'reachedAt', 'reachedBy', 'reachedByTeam'])
+        ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+  }
+}</pre>
+                    <p><strong>After pasting:</strong> Click "Publish" button</p>
+                </div>
+            `;
+        };
+
+        // Auto-check on load
+        setTimeout(() => {
+            window.checkPermissions();
+        }, 1000);
+    </script>
+</body>
+</html>

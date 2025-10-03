@@ -23,25 +23,20 @@ service cloud.firestore {
       allow create: if true;
       
       // Delete permissions:
-      allow delete: if request.auth != null && (
-        // Master admin can delete everything
-        request.auth.token.email == 'charleszoiyana@gmail.com'
-        ||
-        // Users can delete their own pins
-        resource.data.userId == request.auth.uid
-      );
+      // Allow anyone to delete (ownership checked client-side via userId/sessionId)
+      allow delete: if true;
       
       // Update permissions:
-      allow update: if request.auth != null && (
+      allow update: if (
         // Master admin can update anything
-        request.auth.token.email == 'charleszoiyana@gmail.com'
+        (request.auth != null && request.auth.token.email == 'charleszoiyana@gmail.com')
         ||
-        // Regular users can update reached status only
+        // Anyone can update reached status (for team response tracking)
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['reached', 'reachedAt', 'reachedBy'])
+          .hasOnly(['reached', 'reachedAt', 'reachedBy', 'reachedByTeam'])
         ||
-        // Users can update their own pins
-        resource.data.userId == request.auth.uid
+        // Authenticated users can update their own pins
+        (request.auth != null && resource.data.userId == request.auth.uid)
       );
     }
     

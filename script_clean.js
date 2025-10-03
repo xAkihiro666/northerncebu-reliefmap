@@ -312,10 +312,22 @@ async function deleteLocationFromFirestore(firestoreId) {
     try {
         const { deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
         await deleteDoc(doc(db, 'relief-locations', firestoreId));
-        console.log('Location deleted from Firestore:', firestoreId);
+        console.log('✅ Location deleted from Firestore:', firestoreId);
         return true;
     } catch (error) {
-        console.error('Error deleting from Firestore:', error);
+        console.error('❌ Error deleting from Firestore:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        
+        // Check for specific error types
+        if (error.code === 'permission-denied') {
+            console.error('🔒 Permission denied - User does not have permission to delete this location');
+        } else if (error.code === 'not-found') {
+            console.error('📍 Location not found in Firestore');
+        } else if (error.code === 'unavailable') {
+            console.error('🌐 Network error - Firestore unavailable');
+        }
+        
         return false;
     }
 }
@@ -2027,17 +2039,28 @@ async function submitLocationReport(e) {
     try {
         // Get user ID for ownership tracking
         let userId = null;
+        let sessionId = localStorage.getItem('anonymousSessionId');
+        
         if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+            // Authenticated user
             userId = window.firebaseAuth.currentUser.uid;
         } else if (window.getCurrentUserId) {
             userId = window.getCurrentUserId();
+        } else {
+            // Anonymous user - create/use session ID
+            if (!sessionId) {
+                sessionId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('anonymousSessionId', sessionId);
+            }
+            userId = sessionId;
         }
 
         // Create user report object
         const userReport = {
             id: 'user_' + Date.now(),
-            userId: userId || 'anonymous', // Track who created this pin
-            createdBy: window.getCurrentUserId ? window.getCurrentUserId() : 'anonymous',
+            userId: userId, // Track who created this pin (authenticated or session ID)
+            createdBy: userId,
+            isAnonymous: !window.firebaseAuth || !window.firebaseAuth.currentUser,
             name: document.getElementById('locationName').value,
             coords: [pendingReportCoords.lat, pendingReportCoords.lng],
             source: document.getElementById('locationSource').value,
@@ -2180,26 +2203,26 @@ function createUserReportPopup(report) {
     let canDelete = false;
     let deleteReason = '';
     
-    // Get current user ID
-    const currentUserId = window.getCurrentUserId ? window.getCurrentUserId() : null;
+    // Get current user ID (authenticated or session)
+    let currentUserId = null;
+    if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+        currentUserId = window.firebaseAuth.currentUser.uid;
+    } else if (window.getCurrentUserId) {
+        currentUserId = window.getCurrentUserId();
+    } else {
+        // Check anonymous session ID
+        currentUserId = localStorage.getItem('anonymousSessionId');
+    }
     
     // Master admin can delete everything
     if (window.isAdminAuthenticated && window.adminUser && window.adminUser.email === 'charleszoiyana@gmail.com') {
         canDelete = true;
         deleteReason = 'Master Admin';
     }
-    // Regular users can delete their own pins
+    // Users can delete their own pins (authenticated or same session)
     else if (currentUserId && report.userId && report.userId === currentUserId) {
         canDelete = true;
         deleteReason = 'Your pin';
-    }
-    // Check if user is authenticated and owns this pin
-    else if (window.firebaseAuth && window.firebaseAuth.currentUser) {
-        const authUserId = window.firebaseAuth.currentUser.uid;
-        if (report.userId && report.userId === authUserId) {
-            canDelete = true;
-            deleteReason = 'Your pin';
-        }
     }
 
     // Create appropriate action button
@@ -2337,10 +2360,24 @@ async function removeUserReportedLocation(identifier) {
 
     // Try to delete from Firestore first
     let deletedFromFirestore = false;
+    
     if (report.firestoreId) {
+        console.log('Attempting to delete from Firestore:', report.firestoreId);
         deletedFromFirestore = await deleteLocationFromFirestore(report.firestoreId);
+        
+        if (!deletedFromFirestore) {
+            // Deletion failed - show error
+            systemAlert('Failed to delete location. You may not have permission to delete this pin, or there was a connection error.');
+            return;
+        }
+        
+        console.log('✅ Successfully deleted from Firestore');
+    } else {
+        // No Firestore ID - this is a local-only item
+        console.log('Deleting local-only item');
     }
 
+    // Only proceed with local deletion if Firestore deletion succeeded
     // Remove from local array
     userReportedLocations.splice(reportIndex, 1);
 
@@ -2352,8 +2389,8 @@ async function removeUserReportedLocation(identifier) {
 
     // Show success message
     const message = deletedFromFirestore ?
-        'Location removed successfully from all devices.' :
-        'Location removed locally. May still appear on other devices.';
+        '✅ Location removed successfully from all devices.' :
+        '✅ Location removed locally.';
     showSuccessMessage(message);
 
     // Close any open popups
@@ -2361,6 +2398,8 @@ async function removeUserReportedLocation(identifier) {
 
     // Update pinned locations list
     updatePinnedLocationsList();
+    
+    console.log('✅ Location removal complete');
 }
 
 // Pinned locations dropdown functions
