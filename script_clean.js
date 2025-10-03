@@ -621,6 +621,22 @@ function setupEventListeners() {
         document.getElementById('infoPanel').style.display = 'none';
     });
 
+    // Hide search suggestions when clicking on map
+    document.addEventListener('click', (e) => {
+        const searchSuggestions = document.getElementById('searchSuggestions');
+        const searchContainer = document.querySelector('.search-container');
+        
+        // Check if click is outside search container and suggestions are visible
+        if (searchSuggestions && searchContainer && 
+            !searchContainer.contains(e.target) && 
+            (searchSuggestions.classList.contains('show') || searchSuggestions.style.display === 'block')) {
+            // Hide suggestions using both methods to ensure it works
+            searchSuggestions.classList.remove('show');
+            searchSuggestions.style.display = 'none';
+            currentSuggestionIndex = -1;
+        }
+    });
+
     // Directions panel close button
     document.getElementById('closeDirections').addEventListener('click', () => {
         document.getElementById('directionsPanel').style.display = 'none';
@@ -736,7 +752,7 @@ const commonLocations = [
 
     // Nailon Barangay - Detailed Sitios and Areas (CORRECTED COORDINATES)
     { name: 'Jovencio', address: 'Jovencio, Nailon, Bogo City, Cebu', type: 'Sitio', coords: [11.0575, 124.0075] },
-    { name: 'Simbawan', address: 'Simbawan, Nailon, Bogo City, Cebu', type: 'Sitio', coords: [11.0598, 124.0088] }, // More precise
+    { name: 'Simbuawan', address: 'Simbuawan, Nailon, Bogo City, Cebu', type: 'Sitio', coords: [11.014995666069172, 123.98593160028219] }, // More precise
     { name: 'Panabilan', address: 'Panabilan, Nailon, Bogo City, Cebu', type: 'Sitio', coords: [11.0567, 124.0058] },
     { name: 'Nailon Center', address: 'Nailon Center, Bogo City, Cebu', type: 'Barangay Center', coords: [11.0583, 124.0083] },
     { name: 'Nailon Elementary School', address: 'Nailon Elementary School, Bogo City, Cebu', type: 'School', coords: [11.0580, 124.0080] },

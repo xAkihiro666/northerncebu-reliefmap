@@ -552,7 +552,7 @@ footer {
     overflow-y: auto;
     padding: 1.5rem;
     scrollbar-width: thin;
-    scrollbar-color: #28a745 transparent;
+    scrollbar-color: #c1c1c1 transparent;
 }
 
 .info-content::-webkit-scrollbar {
@@ -560,8 +560,12 @@ footer {
 }
 
 .info-content::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #28a745, #20c997);
+    background: #c1c1c1;
     border-radius: 3px;
+}
+
+.info-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 /* Mobile info panel adjustments */
@@ -1190,7 +1194,7 @@ footer {
 .click-to-mark-instruction .instruction-actions {
     display: flex;
     gap: 0.5rem;
-    justify-content: flex-end;
+    justify-content: center;
 }
 
 .click-to-mark-instruction .btn {
@@ -1286,19 +1290,40 @@ body.reporting-mode #map {
 .search-suggestions,
 #searchSuggestions {
     position: absolute;
-    top: 100%;
-    left: 0;
+    top: calc(100% + 2px);
+    left: 1px;
     right: 0;
     background: #ffffff !important;
     border: 1px solid #e0e0e0;
-    border-top: none;
-    border-radius: 0 0 8px 8px;
+    border-radius: 8px;
     box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 12px;
     max-height: 300px;
-    z-index: 99999 !important;
+    z-index: 1999 !important;
     overflow-y: auto;
     display: none !important; /* Hidden by default */
     width: 100%;
+}
+
+.search-suggestions,
+#searchSuggestions {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 transparent;
+}
+
+.search-suggestions::-webkit-scrollbar,
+#searchSuggestions::-webkit-scrollbar {
+    width: 6px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb,
+#searchSuggestions::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb:hover,
+#searchSuggestions::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 /* Show suggestions when active */
@@ -1379,27 +1404,50 @@ body.reporting-mode #map {
 }
 
 @media (max-width: 768px) {
+    .search-suggestions,
+    #searchSuggestions {
+        max-height: 50vh;
+        border-radius: 0 0 12px 12px;
+        box-shadow: rgba(0, 0, 0, 0.2) 0px 6px 20px;
+        margin-top: 2px;
+    }
 
     .search-suggestion-item,
     .suggestion-item {
-        padding: 1rem 0.75rem;
+        padding: 1.25rem 1rem;
         font-size: 16px;
         /* Prevents zoom on iOS */
-        min-height: 44px;
+        line-height: 1.5;
+        min-height: 60px;
         display: flex;
-        align-items: center;
-    }
-}
-
-/* Touch-friendly improvements */
-@media (hover: none) and (pointer: coarse) {
-    .btn:hover {
-        transform: none;
-        box-shadow: none;
+        flex-direction: column;
+        justify-content: center;
     }
 
-    .btn:active {
+    .suggestion-main {
+        font-size: 1.1rem;
+        margin-bottom: 0.4rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .suggestion-address {
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+        color: #6c757d;
+        line-height: 1.4;
+    }
+
+    .suggestion-details {
+        font-size: 0.85rem;
+        color: #28a745;
+        font-weight: 500;
+    }
+
+    .search-suggestion-item:active,
+    .suggestion-item:active {
         transform: scale(0.98);
+        background-color: #e8f5e8;
     }
 
     .search-suggestion-item:hover,
@@ -1409,7 +1457,37 @@ body.reporting-mode #map {
 
     .search-suggestion-item:active,
     .suggestion-item:active {
-        background-color: #e9ecef;
+        background-color: #e8f5e8;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-suggestions,
+    #searchSuggestions {
+        max-height: 45vh;
+        left: -5px;
+        right: -5px;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .search-suggestion-item,
+    .suggestion-item {
+        padding: 1.5rem 1.25rem;
+        min-height: 70px;
+    }
+
+    .suggestion-main {
+        font-size: 1.15rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .suggestion-address {
+        font-size: 0.95rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .suggestion-details {
+        font-size: 0.9rem;
     }
 }
 
@@ -1692,7 +1770,7 @@ body.reporting-mode #map {
 .urgency-filter:hover {
     border-color: #17a2b8;
     color: #17a2b8;
-    transform: translateY(-1px);
+    /* transform: translateY(-1px); */
 }
 
 .urgency-filter.active {
@@ -2169,7 +2247,7 @@ body.reporting-mode #map {
     max-height: calc(90vh - 200px);
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: #28a745 transparent;
+    scrollbar-color: #c1c1c1 transparent;
 }
 
 .welcome-guide-body::-webkit-scrollbar {
@@ -2177,8 +2255,12 @@ body.reporting-mode #map {
 }
 
 .welcome-guide-body::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #28a745, #20c997);
+    background: #c1c1c1;
     border-radius: 3px;
+}
+
+.welcome-guide-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 .welcome-intro {
