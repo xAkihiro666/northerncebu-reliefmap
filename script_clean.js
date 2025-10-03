@@ -18,8 +18,15 @@
 
 // Custom alert function to show "System says" instead of URL
 function systemAlert(message) {
+    // Check if there's already an alert modal to prevent stacking
+    const existingAlert = document.querySelector('.system-alert-modal');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+
     // Create custom modal instead of browser alert
     const alertModal = document.createElement('div');
+    alertModal.className = 'system-alert-modal';
     alertModal.style.cssText = `
         position: fixed;
         top: 0;
@@ -49,7 +56,7 @@ function systemAlert(message) {
                 color: #333;
                 line-height: 1.4;
             ">${message}</div>
-            <button onclick="this.closest('div').parentElement.remove()" style="
+            <button onclick="this.closest('.system-alert-modal').remove()" style="
                 background: #007bff;
                 color: white;
                 border: none;
@@ -994,7 +1001,7 @@ function handleSearchKeydown(e) {
         if (currentSuggestionIndex >= 0 && suggestionItems[currentSuggestionIndex]) {
             // Trigger click on the highlighted suggestion
             suggestionItems[currentSuggestionIndex].click();
-        } else {
+        } else if (!isSearching) {
             searchLocation();
         }
     } else if (e.key === 'Escape') {
@@ -1796,6 +1803,11 @@ function hideSuggestions() {
 }
 
 function searchLocation() {
+    // Prevent multiple simultaneous searches
+    if (isSearching) {
+        return;
+    }
+
     const searchTerm = document.getElementById('searchLocation').value.trim();
 
     if (!searchTerm) {
@@ -1803,13 +1815,18 @@ function searchLocation() {
         return;
     }
 
+    // Set search state
+    isSearching = true;
     hideSuggestions();
 
     // Show loading state
     const searchBtn = document.getElementById('searchBtn');
+    const searchInput = document.getElementById('searchLocation');
     const originalHTML = searchBtn.innerHTML;
+    
     searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     searchBtn.disabled = true;
+    searchInput.disabled = true;
 
     // First, search in local common locations (highest priority)
     const localResults = searchCommonLocations(searchTerm);
@@ -2077,6 +2094,13 @@ function extractLocationName(displayName) {
 function resetSearchButton(button, originalHTML) {
     button.innerHTML = originalHTML;
     button.disabled = false;
+    
+    // Re-enable search input and reset search state
+    const searchInput = document.getElementById('searchLocation');
+    if (searchInput) {
+        searchInput.disabled = false;
+    }
+    isSearching = false;
 }
 
 // User reporting functions
@@ -2579,6 +2603,9 @@ function hidePinnedLocationsList() {
 // Global variables for filtering
 let currentSearchQuery = '';
 let currentUrgencyFilter = 'all';
+
+// Search state management
+let isSearching = false;
 
 function updatePinnedLocationsList() {
     const pinnedCount = document.getElementById('pinnedCount');
