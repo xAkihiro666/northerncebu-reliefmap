@@ -19,21 +19,21 @@
                 <span id="syncText">Connecting...</span>
             </div>
             <a href="user-login.html" id="authIndicator" class="auth-indicator" title="Click to login or sign up">
-                <i class="fas fa-user"></i> <span id="userStatus">Public User</span>
+                <i class="fas fa-user"></i>
+                <span id="userStatus">Public User</span>
             </a>
             <a href="admin.html" class="btn btn-secondary btn-sm admin-link">
                 <i class="fas fa-shield-alt"></i> Admin
             </a>
         </div>
         <div class="search-box">
-            <div class="search-input-container">
-                <input type="text" id="searchLocation" placeholder="Search barangay or town..." autocomplete="off">
-                <button type="button" id="clearSearchBtn" class="clear-search-btn" title="Clear search">
-                    <i class="fas fa-times"></i>
+            <div class="search-container">
+                <input type="text" id="searchLocation" placeholder="Search Northern Cebu locations..." autocomplete="off">
+                <button id="searchBtn" class="search-btn">
+                    <i class="fas fa-search"></i>
                 </button>
-                <div id="searchSuggestions" class="search-suggestions" style="display: none;"></div>
+                <div id="searchSuggestions" class="search-suggestions"></div>
             </div>
-            <button id="searchBtn"><i class="fas fa-search"></i></button>
         </div>
     </nav>
 
@@ -62,6 +62,26 @@
                     <div class="pinned-list-header">
                         <h4><i class="fas fa-map-pin"></i> Pinned Locations</h4>
                         <button id="closePinnedList" class="close-btn">&times;</button>
+                    </div>
+                    <div class="pinned-list-filters">
+                        <div class="pinned-search-container">
+                            <input type="text" id="pinnedSearchInput" placeholder="Search locations..." autocomplete="off">
+                            <i class="fas fa-search pinned-search-icon"></i>
+                        </div>
+                        <div class="pinned-urgency-filters">
+                            <button class="urgency-filter active" data-urgency="all">
+                                <i class="fas fa-list"></i> All
+                            </button>
+                            <button class="urgency-filter" data-urgency="critical">
+                                <i class="fas fa-map-marker-alt"></i> Critical
+                            </button>
+                            <button class="urgency-filter" data-urgency="urgent">
+                                <i class="fas fa-map-marker-alt"></i> Urgent
+                            </button>
+                            <button class="urgency-filter" data-urgency="moderate">
+                                <i class="fas fa-map-marker-alt"></i> Moderate
+                            </button>
+                        </div>
                     </div>
                     <div class="pinned-list-content" id="pinnedListContent">
                         <p class="no-pins">No locations pinned yet. Click "Report Location" to add one.</p>
@@ -110,44 +130,80 @@
             </div>
         </div>
 
-        <div class="info-panel" id="infoPanel">
-            <div class="info-content">
-                <h3>🌐 Public Relief Community Map</h3>
-                <p><strong>This is a public server</strong> - anyone can view and add relief locations in real-time.
-                    Help identify locations that need assistance!</p>
-
-                <div
-                    style="background: #d4edda; padding: 10px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;">
-                    <strong><i class="fas fa-globe"></i> Public Access:</strong><br>
-                    • No login required - anyone can participate<br>
-                    • Changes sync instantly across all devices<br>
-                    • Share this URL with relief workers and community
+        <!-- Welcome Guide Modal -->
+        <div class="welcome-guide-overlay" id="welcomeGuide">
+            <div class="welcome-guide-modal">
+                <div class="welcome-guide-header">
+                    <h2><i class="fas fa-map-marked-alt"></i> Welcome to Northern Cebu Relief Map</h2>
                 </div>
+                <div class="welcome-guide-body">
+                    <div class="welcome-intro">
+                        <p><strong>🌐 Public Community Relief Map</strong> - Help identify locations that need assistance after the earthquake. Anyone can view and add relief locations in real-time.</p>
+                    </div>
 
-                <h4>How to Use:</h4>
-                <ul>
-                    <li><strong>Click "Report Location"</strong> to mark places needing help</li>
-                    <li><strong>Click anywhere on the map</strong> to pin a location</li>
-                    <li><strong>Fill out the form</strong> with details about what help is needed</li>
-                    <li><strong>Click on markers</strong> to see reported information</li>
-                    <li><strong>Search locations</strong> using the search box above</li>
-                    <li><strong>Share this URL</strong> with others to expand coverage</li>
-                </ul>
+                    <div class="welcome-features">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <div class="feature-content">
+                                <h4>Public Access</h4>
+                                <p>No login required - anyone can participate. Changes sync instantly across all devices.</p>
+                            </div>
+                        </div>
 
-                <div
-                    style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #ffc107;">
-                    <strong><i class="fas fa-info-circle"></i> Community Guidelines:</strong><br>
-                    Please provide accurate information to help relief efforts reach those in need. This map relies on
-                    community collaboration.
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-map-pin"></i>
+                            </div>
+                            <div class="feature-content">
+                                <h4>Report Locations</h4>
+                                <p>Click the green "Report Location" button, then click anywhere on the map to pin a location that needs help.</p>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="feature-content">
+                                <h4>Search & Navigate</h4>
+                                <p>Use the search box to find locations, and click markers to see details and get Waze navigation.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="welcome-guidelines">
+                        <div class="guideline-box">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                <strong>Community Guidelines:</strong>
+                                <p>Please provide accurate information to help relief efforts reach those in need. This map relies on community collaboration.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="emergency-contacts">
+                        <h4><i class="fas fa-phone-alt"></i> Emergency Contacts</h4>
+                        <div class="contact-grid">
+                            <div class="contact-item">
+                                <strong>NDRRMC:</strong> 911
+                            </div>
+                            <div class="contact-item">
+                                <strong>Cebu Provincial Disaster:</strong> (032) 266-5841
+                            </div>
+                            <div class="contact-item">
+                                <strong>Red Cross Cebu:</strong> (032) 418-2550
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="emergency-contacts">
-                    <h4>Emergency Contacts</h4>
-                    <p><i class="fas fa-phone"></i> NDRRMC: 911</p>
-                    <p><i class="fas fa-phone"></i> Cebu Provincial Disaster: (032) 266-5841</p>
-                    <p><i class="fas fa-phone"></i> Red Cross Cebu: (032) 418-2550</p>
+                <div class="welcome-guide-footer">
+                    <button id="startUsingMap" class="btn btn-success btn-large">
+                        <i class="fas fa-rocket"></i> Start Using the Map
+                    </button>
                 </div>
             </div>
-            <button id="closeInfo" class="close-btn">&times;</button>
         </div>
 
         <div class="directions-panel" id="directionsPanel">

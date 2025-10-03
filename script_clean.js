@@ -604,33 +604,10 @@ function setupEventListeners() {
         }
     });
 
-    // Clear search button functionality
-    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    // Clear search functionality (no clear button in new design)
 
-    // Show/hide clear button based on input content
-    function toggleClearButton() {
-        const hasContent = searchInput.value.trim().length > 0;
-        clearSearchBtn.style.display = hasContent ? 'flex' : 'none';
-    }
-
-    // Clear search input when clear button is clicked
-    clearSearchBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        searchInput.focus();
-        hideSuggestions();
-        toggleClearButton();
-    });
-
-    // Update clear button visibility on input
-    searchInput.addEventListener('input', toggleClearButton);
-
-    // Initial state - hide clear button if empty
-    toggleClearButton();
-
-    // Info panel close button
-    document.getElementById('closeInfo').addEventListener('click', () => {
-        document.getElementById('infoPanel').style.display = 'none';
-    });
+    // Welcome guide functionality
+    document.getElementById('startUsingMap').addEventListener('click', hideWelcomeGuide);
 
     // Directions panel close button
     document.getElementById('closeDirections').addEventListener('click', () => {
@@ -643,6 +620,12 @@ function setupEventListeners() {
     // Pinned locations dropdown
     document.getElementById('viewPinnedBtn').addEventListener('click', togglePinnedLocationsList);
     document.getElementById('closePinnedList').addEventListener('click', hidePinnedLocationsList);
+    
+    // Pinned locations search and filter
+    document.getElementById('pinnedSearchInput').addEventListener('input', filterPinnedLocations);
+    document.querySelectorAll('.urgency-filter').forEach(filter => {
+        filter.addEventListener('click', handleUrgencyFilter);
+    });
 
     // Close pinned list when clicking outside
     document.addEventListener('click', (e) => {
@@ -2099,31 +2082,59 @@ function resetSearchButton(button, originalHTML) {
 // User reporting functions
 function startReportingMode() {
     isReportingMode = true;
-    document.body.style.cursor = 'crosshair';
+    
+    // Add reporting mode class for enhanced cursor styling
+    document.body.classList.add('reporting-mode');
 
-    // Show instruction overlay
+    // Show instruction overlay with improved design
     const instruction = document.createElement('div');
     instruction.id = 'clickInstruction';
     instruction.className = 'click-to-mark-instruction';
     instruction.innerHTML = `
-        <h4><i class="fas fa-map-marker-alt"></i> Click on Map to Mark Location</h4>
-        <p>Click anywhere on the map to mark a location that needs help</p>
-        <button onclick="cancelReportingMode()" class="btn btn-secondary btn-sm">Cancel</button>
+        <h4><i class="fas fa-map-marker-alt"></i> Pin Relief Location</h4>
+        <p>Click anywhere on the map to mark a location that needs assistance. The pin will help relief teams identify areas requiring help.</p>
+        <div class="instruction-actions">
+            <button onclick="cancelReportingMode()" class="btn btn-secondary btn-sm">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+        <div class="esc-hint">
+            <i class="fas fa-keyboard"></i> Press ESC to cancel
+        </div>
     `;
     document.body.appendChild(instruction);
 
     // Set up map click handler
     map.once('click', handleMapClickForReport);
+    
+    // Add ESC key listener for cancellation
+    document.addEventListener('keydown', handleReportingModeKeydown);
 }
 
 function cancelReportingMode() {
     isReportingMode = false;
+    
+    // Remove reporting mode class and reset cursor
+    document.body.classList.remove('reporting-mode');
     document.body.style.cursor = 'default';
+    
+    // Remove instruction overlay
     const instruction = document.getElementById('clickInstruction');
     if (instruction) {
         instruction.remove();
     }
+    
+    // Clean up event listeners
     map.off('click', handleMapClickForReport);
+    document.removeEventListener('keydown', handleReportingModeKeydown);
+}
+
+// Handle keyboard events during reporting mode
+function handleReportingModeKeydown(e) {
+    if (e.key === 'Escape' && isReportingMode) {
+        e.preventDefault();
+        cancelReportingMode();
+    }
 }
 
 function handleMapClickForReport(e) {
@@ -2565,12 +2576,26 @@ function hidePinnedLocationsList() {
     document.getElementById('pinnedLocationsList').style.display = 'none';
 }
 
+// Global variables for filtering
+let currentSearchQuery = '';
+let currentUrgencyFilter = 'all';
+
 function updatePinnedLocationsList() {
     const pinnedCount = document.getElementById('pinnedCount');
-    const pinnedListContent = document.getElementById('pinnedListContent');
-
+    
     // Update count
     pinnedCount.textContent = userReportedLocations.length;
+    
+    // Apply current filters
+    filterPinnedLocations();
+}
+
+function filterPinnedLocations() {
+    const pinnedListContent = document.getElementById('pinnedListContent');
+    const searchInput = document.getElementById('pinnedSearchInput');
+    
+    // Get current search query
+    currentSearchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
     // Clear existing content
     pinnedListContent.innerHTML = '';
@@ -2580,8 +2605,31 @@ function updatePinnedLocationsList() {
         return;
     }
 
-    // Sort locations by urgency and date
-    const sortedLocations = [...userReportedLocations].sort((a, b) => {
+    // Filter locations based on search and urgency
+    let filteredLocations = userReportedLocations.filter(location => {
+        // Search filter
+        const matchesSearch = !currentSearchQuery || 
+            location.name.toLowerCase().includes(currentSearchQuery) ||
+            location.reliefNeeds.some(need => need.toLowerCase().includes(currentSearchQuery)) ||
+            location.additionalInfo?.toLowerCase().includes(currentSearchQuery);
+        
+        // Urgency filter
+        const matchesUrgency = currentUrgencyFilter === 'all' || 
+            location.urgencyLevel === currentUrgencyFilter;
+        
+        return matchesSearch && matchesUrgency;
+    });
+
+    if (filteredLocations.length === 0) {
+        const noResultsMsg = currentSearchQuery || currentUrgencyFilter !== 'all' 
+            ? 'No locations match your search criteria.' 
+            : 'No locations pinned yet.';
+        pinnedListContent.innerHTML = `<p class="no-pins">${noResultsMsg}</p>`;
+        return;
+    }
+
+    // Sort filtered locations by urgency and date
+    const sortedLocations = [...filteredLocations].sort((a, b) => {
         const urgencyOrder = { 'critical': 3, 'urgent': 2, 'moderate': 1 };
         const urgencyA = urgencyOrder[a.urgencyLevel] || 0;
         const urgencyB = urgencyOrder[b.urgencyLevel] || 0;
@@ -2617,8 +2665,15 @@ function updatePinnedLocationsList() {
             hidePinnedLocationsList();
         };
 
+        // Bold search terms without adding spaces
+        let displayName = location.name;
+        if (currentSearchQuery) {
+            const regex = new RegExp(`(${currentSearchQuery})`, 'gi');
+            displayName = displayName.replace(regex, '<strong>$1</strong>');
+        }
+
         listItem.innerHTML = `
-            <div class="pinned-item-name">${location.name}</div>
+            <div class="pinned-item-name">${displayName}</div>
             <div class="pinned-item-details">
                 <span class="pinned-item-urgency" style="background-color: ${urgencyColor};">${urgencyText}</span>
                 <span class="pinned-item-source">${location.source.toUpperCase()}</span>
@@ -2635,6 +2690,22 @@ function updatePinnedLocationsList() {
 
         pinnedListContent.appendChild(listItem);
     });
+}
+
+function handleUrgencyFilter(e) {
+    // Remove active class from all filters
+    document.querySelectorAll('.urgency-filter').forEach(filter => {
+        filter.classList.remove('active');
+    });
+    
+    // Add active class to clicked filter
+    e.target.closest('.urgency-filter').classList.add('active');
+    
+    // Update current filter
+    currentUrgencyFilter = e.target.closest('.urgency-filter').dataset.urgency;
+    
+    // Apply filter
+    filterPinnedLocations();
 }
 
 // Helper function to remove marker from all layers
@@ -2679,10 +2750,45 @@ function openWazeNavigation(lat, lng, locationName) {
 
 }
 
+// Welcome Guide Functions
+function showWelcomeGuide() {
+    const welcomeGuide = document.getElementById('welcomeGuide');
+    if (welcomeGuide) {
+        welcomeGuide.classList.add('show');
+        // Disable interaction with the rest of the page
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function hideWelcomeGuide() {
+    const welcomeGuide = document.getElementById('welcomeGuide');
+    if (welcomeGuide) {
+        welcomeGuide.classList.remove('show');
+        // Re-enable interaction with the rest of the page
+        document.body.style.overflow = 'auto';
+        // Mark as completed so it doesn't show again
+        localStorage.setItem('welcomeGuideCompleted', 'true');
+        localStorage.setItem('welcomeGuideCompletedDate', new Date().toISOString());
+    }
+}
+
+function shouldShowWelcomeGuide() {
+    // Check if user has completed the welcome guide before
+    const completed = localStorage.getItem('welcomeGuideCompleted');
+    
+    // Only show if user has NOT completed it yet
+    return !completed;
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
     // Set initial status
     updateSyncStatus('connecting', 'Connecting...');
+
+    // Show welcome guide on first visit
+    if (shouldShowWelcomeGuide()) {
+        showWelcomeGuide();
+    }
 
     // Wait a bit for Firebase to load
     setTimeout(async () => {
