@@ -69,17 +69,22 @@ export function canDeleteLocation(location) {
 function updateAuthStatus(status) {
     const authIndicator = document.getElementById('authIndicator');
     if (authIndicator) {
+        // Don't update if this is admin map
+        if (window.isAdminMap) {
+            return; // Admin map handles its own auth indicator
+        }
+        
         switch(status) {
             case 'connected':
-                authIndicator.innerHTML = '<i class="fas fa-user-check"></i> Connected';
+                authIndicator.innerHTML = '<i class="fas fa-user"></i> Public User';
                 authIndicator.className = 'auth-indicator connected';
                 break;
             case 'local':
-                authIndicator.innerHTML = '<i class="fas fa-user"></i> Local User';
+                authIndicator.innerHTML = '<i class="fas fa-user"></i> Public User';
                 authIndicator.className = 'auth-indicator local';
                 break;
             default:
-                authIndicator.innerHTML = '<i class="fas fa-user-times"></i> Anonymous';
+                authIndicator.innerHTML = '<i class="fas fa-user"></i> Public User';
                 authIndicator.className = 'auth-indicator anonymous';
         }
     }

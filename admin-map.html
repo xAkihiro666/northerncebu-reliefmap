@@ -4,10 +4,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Northern Cebu Earthquake Relief Map Guide</title>
+    <title>Admin Map - Northern Cebu Relief Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Admin-specific styling */
+        .admin-badge {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .admin-indicator {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 0.75rem 1rem;
+            margin: 1rem;
+            border-radius: 6px;
+            color: #155724;
+            font-weight: 500;
+        }
+
+        .auth-indicator.admin-mode {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+            font-weight: 600;
+        }
+    </style>
 </head>
 
 <body>
@@ -18,12 +49,15 @@
                 <i class="fas fa-circle" id="syncIcon"></i>
                 <span id="syncText">Connecting...</span>
             </div>
-            <div id="authIndicator" class="auth-indicator">
-                <i class="fas fa-user"></i> Public User
+            <div id="authIndicator" class="auth-indicator admin-mode">
+                <i class="fas fa-user-shield"></i> <span id="adminEmail">Loading...</span>
             </div>
-            <a href="admin.html" class="btn btn-secondary btn-sm admin-link">
+            <a href="admin.html" class="btn btn-secondary btn-sm">
                 <i class="fas fa-shield-alt"></i> Admin Panel
             </a>
+            <button id="logoutBtn" class="btn btn-danger btn-sm" style="display: none;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
         </div>
         <div class="search-box">
             <div class="search-input-container">
@@ -36,6 +70,11 @@
             <button id="searchBtn"><i class="fas fa-search"></i></button>
         </div>
     </nav>
+
+    <!-- Admin Access Notice -->
+    <div class="admin-indicator">
+        <i class="fas fa-shield-alt"></i> <strong>Admin Mode:</strong> You have full access to delete and manage pins on this map.
+    </div>
 
     <main>
         <div class="map-container">
@@ -94,39 +133,45 @@
                             <span>Moderate - Help needed within few days</span>
                         </div>
                     </div>
+                    <div class="legend-section">
+                        <h4>Admin Actions</h4>
+                        <div class="legend-item">
+                            <i class="fas fa-trash legend-icon" style="color: #dc3545;"></i>
+                            <span>Delete pins (Admin only)</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="info-panel" id="infoPanel">
             <div class="info-content">
-                <h3>🌐 Public Relief Community Map</h3>
-                <p><strong>This is a public server</strong> - anyone can view and add relief locations in real-time.
-                    Help identify locations that need assistance!</p>
+                <h3>🛡️ Admin Relief Map</h3>
+                <p><strong>You are logged in as an administrator</strong> - you have full access to manage pins on the public server.</p>
 
                 <div
                     style="background: #d4edda; padding: 10px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;">
-                    <strong><i class="fas fa-globe"></i> Public Access:</strong><br>
-                    • No login required - anyone can participate<br>
-                    • Changes sync instantly across all devices<br>
-                    • Share this URL with relief workers and community
+                    <strong><i class="fas fa-shield-alt"></i> Admin Privileges:</strong><br>
+                    • View all reported locations<br>
+                    • Delete any pin (spam, duplicates, resolved)<br>
+                    • Add new locations<br>
+                    • Navigate with Waze<br>
+                    • Changes sync to public map instantly
                 </div>
 
                 <h4>How to Use:</h4>
                 <ul>
-                    <li><strong>Click "Report Location"</strong> to mark places needing help</li>
-                    <li><strong>Click anywhere on the map</strong> to pin a location</li>
-                    <li><strong>Fill out the form</strong> with details about what help is needed</li>
-                    <li><strong>Click on markers</strong> to see reported information</li>
+                    <li><strong>Click any pin</strong> to see details and delete option</li>
+                    <li><strong>Click "Remove"</strong> to delete unwanted pins</li>
+                    <li><strong>Click "Report Location"</strong> to add new pins</li>
                     <li><strong>Search locations</strong> using the search box above</li>
-                    <li><strong>Share this URL</strong> with others to expand coverage</li>
+                    <li><strong>Navigate with Waze</strong> to reach locations</li>
                 </ul>
 
                 <div
                     style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #ffc107;">
-                    <strong><i class="fas fa-info-circle"></i> Community Guidelines:</strong><br>
-                    Please provide accurate information to help relief efforts reach those in need. This map relies on
-                    community collaboration.
+                    <strong><i class="fas fa-info-circle"></i> Admin Guidelines:</strong><br>
+                    Only delete pins that are spam, duplicates, or verified as resolved. All deletions are permanent and sync across all devices.
                 </div>
                 <div class="emergency-contacts">
                     <h4>Emergency Contacts</h4>
@@ -243,7 +288,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
         import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
-        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
         import { firebaseConfig } from './firebase-config.js';
 
         // Initialize Firebase
@@ -257,10 +302,43 @@
             window.firestoreDb = db;
             window.firebaseAuth = auth;
 
-            console.log('Firebase SDK loaded successfully');
+            // Mark this as admin map
+            window.isAdminMap = true;
+            window.isAdminAuthenticated = false;
+
+            console.log('Firebase SDK loaded successfully - Admin Map Mode');
+
+            // Check authentication
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    // Admin is logged in
+                    window.isAdminAuthenticated = true;
+                    window.adminUser = user;
+                    document.getElementById('adminEmail').textContent = `Admin: ${user.email}`;
+                    document.getElementById('logoutBtn').style.display = 'inline-block';
+                    console.log('🛡️ Admin authenticated:', user.email);
+                } else {
+                    // Not logged in - redirect to admin panel
+                    console.log('❌ No admin session - redirecting to login');
+                    alert('Please login to access the admin map');
+                    window.location.href = 'admin.html';
+                }
+            });
+
+            // Logout button
+            document.getElementById('logoutBtn').addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    window.location.href = 'admin.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+            });
+
         } catch (error) {
-            console.warn('Firebase initialization failed:', error);
-            console.warn('App will fall back to localStorage');
+            console.error('Firebase initialization failed:', error);
+            alert('Failed to connect to database. Please try again.');
+            window.location.href = 'admin.html';
         }
     </script>
 
@@ -268,9 +346,8 @@
 
     <footer>
         <div class="footer-content">
-            <h1><i class="fas fa-map"></i> Northern Cebu Earthquake Relief Map Guide</h1>
-            <p> Public Community Map - Anyone can view and report relief locations | Real-time sync across all devices
-            </p>
+            <h1><i class="fas fa-shield-alt"></i> Admin Map - Northern Cebu Earthquake Relief</h1>
+            <p>🛡️ Administrator Access - Connected to Public Server | Real-time sync across all devices</p>
             <p>Helping relief efforts reach affected communities - Magnitude 6.7/6.9 Earthquake Response</p>
         </div>
     </footer>

@@ -197,6 +197,15 @@ function initFirebase() {
         console.log('🌐 Firebase public server initialized successfully - Real-time sync enabled');
         updateSyncStatus('online', 'Public Server Online');
 
+        // Check if this is admin map
+        if (window.isAdminMap) {
+            // Admin map - authentication already handled in admin-map.html
+            window.isAdminAuthenticated = true;
+        } else {
+            // Public map - no delete privileges
+            window.isAdminAuthenticated = false;
+        }
+
         // Initialize simple authentication for user identification
         import('./simple-auth.js').then(authModule => {
             authModule.initSimpleAuth();
@@ -2081,8 +2090,8 @@ function createUserReportPopup(report) {
     // Use a unique identifier that works for both local and Firestore items
     const uniqueId = report.firestoreId || report.id || `temp_${Date.now()}`;
 
-    // Check if current user can delete this location
-    const canDelete = window.canDeleteLocation ? window.canDeleteLocation(report) : true;
+    // Check if current user can delete this location (admin only)
+    const canDelete = window.isAdminAuthenticated || false;
 
     // Create appropriate action button
     const actionButton = canDelete ?
@@ -2090,7 +2099,7 @@ function createUserReportPopup(report) {
             <i class="fas fa-trash"></i> Remove
         </button>` :
         `<span class="text-muted" style="font-size: 0.8rem; padding: 0.5rem;">
-            <i class="fas fa-lock"></i> Only the reporter can remove this location
+            <i class="fas fa-lock"></i> Only admins can remove locations
         </span>`;
 
     return `
