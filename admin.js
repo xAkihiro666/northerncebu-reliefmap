@@ -89,6 +89,7 @@ function setupEventListeners() {
 
     // Filters
     document.getElementById('urgencyFilter').addEventListener('change', applyFilters);
+    document.getElementById('reachedFilter').addEventListener('change', applyFilters);
     document.getElementById('sortBy').addEventListener('change', applyFilters);
 
     // Refresh button
@@ -376,6 +377,7 @@ function handleSearch() {
 function applyFilters() {
     const searchTerm = document.getElementById('searchPins').value.toLowerCase().trim();
     const urgencyFilter = document.getElementById('urgencyFilter').value;
+    const reachedFilter = document.getElementById('reachedFilter').value;
     const sortBy = document.getElementById('sortBy').value;
 
     // Filter locations
@@ -386,16 +388,32 @@ function applyFilters() {
             location.source.toLowerCase().includes(searchTerm) ||
             (location.reporterName && location.reporterName.toLowerCase().includes(searchTerm)) ||
             (location.additionalInfo && location.additionalInfo.toLowerCase().includes(searchTerm)) ||
+            (location.reachedByTeam && location.reachedByTeam.toLowerCase().includes(searchTerm)) ||
             location.reliefNeeds.some(need => need.toLowerCase().includes(searchTerm));
 
         // Urgency filter
         const matchesUrgency = urgencyFilter === 'all' || location.urgencyLevel === urgencyFilter;
 
-        return matchesSearch && matchesUrgency;
+        // Reached filter
+        const isReached = location.reached || false;
+        const matchesReached = reachedFilter === 'all' || 
+            (reachedFilter === 'reached' && isReached) ||
+            (reachedFilter === 'not-reached' && !isReached);
+
+        return matchesSearch && matchesUrgency && matchesReached;
     });
 
-    // Sort locations
+    // Sort locations - ALWAYS put reached locations at top first
     filteredLocations.sort((a, b) => {
+        const aReached = a.reached || false;
+        const bReached = b.reached || false;
+        
+        // Primary sort: Reached status (reached items first)
+        if (aReached !== bReached) {
+            return bReached ? 1 : -1; // Reached items come first
+        }
+        
+        // Secondary sort: Based on selected sort option
         switch (sortBy) {
             case 'date-desc':
                 return new Date(b.reportedAt) - new Date(a.reportedAt);
